@@ -1,0 +1,17 @@
+const express = require('express');
+const { registerUser, loginUser, verifyUser, resetPassword, verifyEmail, resendVerification, getProfile } = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
+
+const router = express.Router();
+
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+router.post('/verify-user', verifyUser);
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerification);
+router.post('/reset-password', resetPassword);
+
+// Protected route to get current user's profile
+router.get('/profile', protect, getProfile);
+
+module.exports = router;
