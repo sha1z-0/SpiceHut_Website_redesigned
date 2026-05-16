@@ -27,17 +27,24 @@ const app = express();
 // Middlewares
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  process.env.RENDER_FRONTEND_URL,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'https://spicehutcanada.org',
   'https://spicehutcanada.com',
+  'https://spicehut-8mqx.onrender.com',
 ].filter(Boolean);
+
+const allowedOriginPatterns = [/\.onrender\.com$/];
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser or same-origin requests
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOriginPatterns.some((pattern) => pattern.test(origin))) {
+      return callback(null, true);
+    }
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
