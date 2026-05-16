@@ -10,10 +10,10 @@ const Footer = () => {
         </p>
         <div className="flex sm:flex-row justify-center items-center gap-4 sm:gap-6 md:gap-8 mt-4">
           <Link
-            to="/user/about-us"
+            to="/user/support"
             className="hover:text-[#FF6A00] transition-colors text-sm md:text-base"
           >
-            About Us
+            Support
           </Link>
           <Link
             to="/user/contact"

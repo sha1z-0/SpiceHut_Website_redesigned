@@ -1,14 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useCart } from "../context.cart";
 
 const Header = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { cartItems } = useCart();
   const [showSearch, _setShowSearch] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const dropdownRef = useRef(null);
+  const cartCount = cartItems.reduce(
+    (total, item) => total + (Number(item.quantity) || 0),
+    0
+  );
+  const cartCountLabel = cartCount > 99 ? "99+" : cartCount.toString();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -53,9 +60,9 @@ const Header = () => {
     <header className="bg-black shadow-md">
       <div className="px-4 sm:px-6 lg:px-8 py-4">
         {/* Main Header Row */}
-        <div className="flex items-center justify-between">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4">
           {/* Left: Restaurant Name and Mobile Menu Button */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 min-w-0">
             {/* Mobile Menu Button - Mobile Only */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -92,13 +99,13 @@ const Header = () => {
                 </svg>
               )}
             </button>
-            <div className="text-xl sm:text-2xl font-bold text-white whitespace-nowrap">
-              Spice Hut
+            <div className="text-lg sm:text-2xl font-bold text-white leading-tight">
+              Spice Hut Indian Cuisine
             </div>
           </div>
 
           {/* Center: Navigation Links - Desktop Only */}
-          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-10">
+          <nav className="hidden lg:flex items-center justify-center space-x-6 xl:space-x-10 justify-self-center">
             <button
               onClick={() => navigate("intro")}
               className="text-white hover:text-[#FF6A00] transition text-sm xl:text-base"
@@ -118,18 +125,18 @@ const Header = () => {
               Menu
             </button>
             <button
-              onClick={() => navigate("support")}
+              onClick={() => navigate("about-us")}
               className="text-white hover:text-[#FF6A00] transition text-sm xl:text-base"
             >
-              Support
+              About Us
             </button>
           </nav>
 
           {/* Right: Icons */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4 justify-self-end">
             <button
               onClick={handleCartClick}
-              className="text-white hover:text-[#FF6A00] transition p-1"
+              className="relative text-white hover:text-[#FF6A00] transition p-1"
               aria-label="Cart"
             >
               <svg
@@ -145,6 +152,14 @@ const Header = () => {
                   d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
+              {cartCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 bg-[#FF6A00] text-white text-[10px] sm:text-[11px] leading-none px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
+                  aria-label={`${cartCount} items in cart`}
+                >
+                  {cartCountLabel}
+                </span>
+              )}
             </button>
 
             {/* Profile Dropdown */}
@@ -240,12 +255,12 @@ const Header = () => {
               </button>
               <button
                 onClick={() => {
-                  navigate("support");
+                  navigate("about-us");
                   handleNavClick();
                 }}
                 className="text-white hover:text-[#FF6A00] transition py-2 text-left"
               >
-                Support
+                About Us
               </button>
             </div>
           </nav>

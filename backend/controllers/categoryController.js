@@ -1,13 +1,15 @@
 const Category = require('../models/Category');
 const { uploadImage, deleteImage, extractPublicId } = require('../utils/cloudinary');
+const { sortCategories } = require('../utils/menuOrder');
 
 const slugify = (s) => s && s.toString().toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 // Get all categories
 const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find().sort({ name: 1 });
-    res.json(categories.map(c => ({ 
+    const categories = await Category.find();
+    const ordered = sortCategories(categories);
+    res.json(ordered.map(c => ({ 
       _id: c._id, 
       name: c.name, 
       description: c.description, 

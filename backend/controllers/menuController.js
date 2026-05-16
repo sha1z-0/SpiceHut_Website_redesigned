@@ -1,6 +1,11 @@
 const MenuItem = require('../models/MenuItem');
 const Category = require('../models/Category');
 const { uploadImage, deleteImage, extractPublicId } = require('../utils/cloudinary');
+const {
+  sortCategories,
+  sortMenuItems,
+  sortMenuItemsForCategory,
+} = require('../utils/menuOrder');
 
 // Search menu items and categories
 const searchMenu = async (req, res) => {
@@ -14,25 +19,28 @@ const searchMenu = async (req, res) => {
     const searchRegex = new RegExp(escapedQuery, 'i');
 
     const categories = await Category.find({
-      name: { $regex: searchRegex }
-    }).sort({ name: 1 });
+      name: { $regex: searchRegex },
+    });
 
     const items = await MenuItem.find({
       $or: [
         { name: { $regex: searchRegex } },
-        { category: { $regex: searchRegex } }
-      ]
-    }).sort({ name: 1 });
+        { category: { $regex: searchRegex } },
+      ],
+    });
+
+    const orderedCategories = sortCategories(categories);
+    const orderedItems = sortMenuItems(items);
 
     res.json({
-      categories: categories.map(c => ({
+      categories: orderedCategories.map(c => ({
         _id: c._id,
         name: c.name,
         description: c.description,
         image: c.image || '',
         slug: c.slug || c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
       })),
-      items: items
+      items: orderedItems
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -42,8 +50,9 @@ const searchMenu = async (req, res) => {
 // Get all menu items (admin or public)
 const getMenuItems = async (req, res) => {
   try {
-    const items = await MenuItem.find().sort({ createdAt: -1 });
-    res.json(items);
+    const items = await MenuItem.find();
+    const orderedItems = sortMenuItems(items);
+    res.json(orderedItems);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -57,14 +66,23 @@ const getMenuByCategory = async (req, res) => {
 
     const slug = raw.toString().toLowerCase().trim();
 
-    let category = await Category.findOne({ $or: [{ slug }, { name: new RegExp(`^${raw}$`, 'i') }] }).populate('items');
+    let category = await Category.findOne({
+      $or: [{ slug }, { name: new RegExp(`^${raw}$`, 'i') }],
+    }).populate('items');
 
     if (category && category.items && category.items.length) {
-      return res.json(category.items);
+      const orderedItems = sortMenuItemsForCategory(
+        category.items,
+        category.name
+      );
+      return res.json(orderedItems);
     }
 
-    const items = await MenuItem.find({ category: new RegExp(`^${raw}$`, 'i') }).sort({ createdAt: -1 });
-    return res.json(items);
+    const items = await MenuItem.find({
+      category: new RegExp(`^${raw}$`, 'i'),
+    });
+    const orderedItems = sortMenuItemsForCategory(items, raw);
+    return res.json(orderedItems);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

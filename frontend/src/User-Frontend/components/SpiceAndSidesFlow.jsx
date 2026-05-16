@@ -20,6 +20,8 @@ const EXCLUDED_CATEGORY_KEYWORDS = [
   "naan",
   "bread",
   "breads",
+  "appetizer",
+  "appetizers",
   "salad",
   "salads",
   "dessert",
@@ -32,6 +34,15 @@ const isSpiceEligible = (category) => {
   return !EXCLUDED_CATEGORY_KEYWORDS.some((keyword) =>
     normalized.includes(keyword)
   );
+};
+
+const resolveCategoryName = (item) => {
+  const raw = item?.category;
+  if (typeof raw === "string") return raw;
+  if (raw && typeof raw === "object") {
+    return raw.name || raw.label || "";
+  }
+  return item?.categoryName || item?.categoryLabel || "";
 };
 
 export const useSpiceAndSidesFlow = (addToCart) => {
@@ -56,9 +67,13 @@ export const useSpiceAndSidesFlow = (addToCart) => {
       menuItemId: item.menuItemId || item._id || null,
       specialInstructions: item.specialInstructions || "",
     };
+    const categoryName = resolveCategoryName(normalizedItem);
+    if (categoryName) {
+      normalizedItem.category = categoryName;
+    }
     setPendingItem({ item: normalizedItem, quantity });
 
-    if (isSpiceEligible(normalizedItem.category)) {
+    if (isSpiceEligible(categoryName || normalizedItem.category)) {
       setSelectedSpice("Medium");
       setShowSpiceModal(true);
       return;

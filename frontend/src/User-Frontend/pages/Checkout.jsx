@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   FaUser,
   FaMapMarkerAlt,
-  FaTruck,
-  FaShoppingBag,
   FaArrowLeft,
   FaCreditCard,
   FaLocationArrow,
@@ -31,8 +29,8 @@ export default function Checkout() {
     phone: "",
   });
 
-  // Delivery method state
-  const [deliveryMethod, setDeliveryMethod] = useState("home");
+  // Default all orders to delivery
+  const deliveryMethod = "home";
 
   // Address state
   const [addresses, setAddresses] = useState([]);
@@ -66,7 +64,7 @@ export default function Checkout() {
           // Fetch profile and addresses in parallel
           const [serverProfile, serverAddresses] = await Promise.all([
             profileAPI.getProfile().catch(() => null),
-            profileAPI.getAddresses().catch(() => [])
+            profileAPI.getAddresses().catch(() => []),
           ]);
 
           if (serverProfile) {
@@ -91,8 +89,7 @@ export default function Checkout() {
             : [];
           setAddresses(mappedAddrs);
           if (mappedAddrs.length) {
-            const def =
-              mappedAddrs.find((a) => a.isDefault) || mappedAddrs[0];
+            const def = mappedAddrs.find((a) => a.isDefault) || mappedAddrs[0];
             setSelectedAddress(def.id);
           } else {
             setSelectedAddress(null);
@@ -277,7 +274,7 @@ export default function Checkout() {
 
   const handleSaveEditedAddress = async (id) => {
     if (!editingAddress || !editingAddress.addressLine1 || !editingAddress.city || !editingAddress.postalCode) {
-      alert('Please fill in all required fields.');
+      alert("Please fill in all required fields.");
       return;
     }
     const fullAddress = `${editingAddress.addressLine1}, ${editingAddress.city}, ${editingAddress.postalCode}`;
@@ -291,8 +288,8 @@ export default function Checkout() {
       setEditingAddressId(null);
       setEditingAddress(null);
     } catch (err) {
-      console.error('Failed to update address', err);
-      alert('Failed to update address.');
+      console.error("Failed to update address", err);
+      alert("Failed to update address.");
     }
   };
 
@@ -345,7 +342,7 @@ export default function Checkout() {
         <p className="text-sm text-center mb-8">Complete your order details</p>
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: User Info, Address, Delivery Method */}
+          {/* Left Column: User Info, Address */}
           <div className="lg:col-span-2 space-y-6">
             {/* User Information */}
             <DarkCard>
@@ -389,241 +386,223 @@ export default function Checkout() {
               </div>
             </DarkCard>
 
-            {/* Delivery Method */}
+            {/* Delivery Address */}
             <DarkCard>
-              <h3 className="font-semibold mb-4">Delivery Method</h3>
+              <h3 className="font-semibold mb-4 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <FaMapMarkerAlt /> Delivery Address
+                </span>
+              </h3>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="home"
-                    checked={deliveryMethod === "home"}
-                    onChange={(e) => setDeliveryMethod(e.target.value)}
-                    className="text-orange-600"
-                  />
-                  <FaTruck className="text-orange-600" />
-                  <span>Home Delivery</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="pickup"
-                    checked={deliveryMethod === "pickup"}
-                    onChange={(e) => setDeliveryMethod(e.target.value)}
-                    className="text-orange-600"
-                  />
-                  <FaShoppingBag className="text-orange-600" />
-                  <span>Pickup from Restaurant</span>
-                </label>
-              </div>
-            </DarkCard>
-
-            {/* Delivery Address - Only show if home delivery */}
-            {deliveryMethod === "home" && (
-              <DarkCard>
-                <h3 className="font-semibold mb-4 flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <FaMapMarkerAlt /> Delivery Address
-                  </span>
-                </h3>
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Saved Addresses</h4>
-                  {addresses.map((addr) => (
-                    <div key={addr.id} className="flex items-start gap-3">
-                      <label className="flex items-center gap-3 cursor-pointer flex-1">
-                        <input
-                          type="radio"
-                          name="address"
-                          value={addr.id}
-                          checked={selectedAddress === addr.id}
-                          onChange={(e) => setSelectedAddress(e.target.value)}
-                          className="text-orange-600"
-                        />
-                        <div>
-                          <span className="font-semibold">{addr.label}</span>
-                          {addr.isDefault && (
-                            <span className="text-orange-600 text-sm ml-2">
-                              (Default)
-                            </span>
-                          )}
-                          <p className="text-sm text-gray-300">{addr.address}</p>
-                        </div>
-                      </label>
-                      <div className="flex items-center gap-2">
-                        {editingAddressId === addr.id && editingAddress ? (
-                          <>
-                            <button
-                              onClick={() => handleSaveEditedAddress(addr.id)}
-                              className="bg-orange-600 text-white px-2 py-1 rounded text-sm"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              className="text-sm text-white px-2 py-1"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleEditClick(addr)}
-                              className="text-sm text-white px-2 py-1 border border-white rounded"
-                            >
-                              Edit
-                            </button>
-                          </>
+                <h4 className="font-semibold">Saved Addresses</h4>
+                {addresses.map((addr) => (
+                  <div key={addr.id} className="flex items-start gap-3">
+                    <label className="flex items-center gap-3 cursor-pointer flex-1">
+                      <input
+                        type="radio"
+                        name="address"
+                        value={addr.id}
+                        checked={selectedAddress === addr.id}
+                        onChange={(e) => setSelectedAddress(e.target.value)}
+                        className="text-orange-600"
+                      />
+                      <div>
+                        <span className="font-semibold">{addr.label}</span>
+                        {addr.isDefault && (
+                          <span className="text-orange-600 text-sm ml-2">
+                            (Default)
+                          </span>
                         )}
+                        <p className="text-sm text-gray-300">{addr.address}</p>
                       </div>
-                    </div>
-                  ))}
-                  {editingAddressId && editingAddress && (
-                    <div className="bg-[#1a1209] p-3 rounded mt-3 space-y-2">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={editingAddress.label}
-                          onChange={(e) =>
-                            setEditingAddress((prev) => ({ ...prev, label: e.target.value }))
-                          }
-                          className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
-                        />
-                        <input
-                          type="text"
-                          value={editingAddress.addressLine1}
-                          onChange={(e) =>
-                            setEditingAddress((prev) => ({ ...prev, addressLine1: e.target.value }))
-                          }
-                          className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
-                        />
-                        <input
-                          type="text"
-                          value={editingAddress.city}
-                          onChange={(e) =>
-                            setEditingAddress((prev) => ({ ...prev, city: e.target.value }))
-                          }
-                          className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
-                        />
-                        <input
-                          type="text"
-                          value={editingAddress.postalCode}
-                          onChange={(e) =>
-                            setEditingAddress((prev) => ({ ...prev, postalCode: e.target.value }))
-                          }
-                          className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleSaveEditedAddress(editingAddressId)}
-                          className="bg-orange-600 text-white px-3 py-2 rounded"
-                        >
-                          Save
-                        </button>
-                        <button onClick={handleCancelEdit} className="px-3 py-2 rounded border border-white">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setShowAddAddress(!showAddAddress)}
-                    className="text-orange-600 hover:text-orange-700 text-sm"
-                  >
-                    + Add New Address
-                  </button>
-                  {showAddAddress && (
-                    <div className="bg-[#2a1f0f] p-4 rounded mt-4 space-y-3">
-                      <div className="flex justify-end">
-                        <button
-                          onClick={handleUseCurrentLocation}
-                          className="bg-orange-600 text-white px-3 py-1 rounded hover:bg-orange-700 flex items-center gap-2 text-sm"
-                        >
-                          <FaLocationArrow /> Use my current location
-                        </button>
-                      </div>
-                      {locationError && (
-                        <div className="text-red-400 text-sm">
-                          {locationError}
-                        </div>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {editingAddressId === addr.id && editingAddress ? (
+                        <>
+                          <button
+                            onClick={() => handleSaveEditedAddress(addr.id)}
+                            className="bg-orange-600 text-white px-2 py-1 rounded text-sm"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="text-sm text-white px-2 py-1"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(addr)}
+                            className="text-sm text-white px-2 py-1 border border-white rounded"
+                          >
+                            Edit
+                          </button>
+                        </>
                       )}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          placeholder="Label (e.g., Home, Work)"
-                          value={newAddress.label}
-                          onChange={(e) =>
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              label: e.target.value,
-                            }))
-                          }
-                          className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Address Line 1"
-                          value={newAddress.addressLine1}
-                          onChange={(e) =>
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              addressLine1: e.target.value,
-                            }))
-                          }
-                          className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                        />
-                        {/* Address Line 2 removed — use Address Line 1 + City + Postal Code */}
-                        <input
-                          type="text"
-                          placeholder="City"
-                          value={newAddress.city}
-                          onChange={(e) =>
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              city: e.target.value,
-                            }))
-                          }
-                          className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Postal Code"
-                          value={newAddress.postalCode}
-                          onChange={(e) =>
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              postalCode: e.target.value,
-                            }))
-                          }
-                          className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                        />
-                        <textarea
-                          placeholder="Delivery Instructions (optional)"
-                          value={newAddress.instructions}
-                          onChange={(e) =>
-                            setNewAddress((prev) => ({
-                              ...prev,
-                              instructions: e.target.value,
-                            }))
-                          }
-                          className="bg-[#1a1209] rounded px-3 py-2 text-white md:col-span-2"
-                          rows="2"
-                        />
-                      </div>
+                    </div>
+                  </div>
+                ))}
+                {editingAddressId && editingAddress && (
+                  <div className="bg-[#1a1209] p-3 rounded mt-3 space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={editingAddress.label}
+                        onChange={(e) =>
+                          setEditingAddress((prev) => ({
+                            ...prev,
+                            label: e.target.value,
+                          }))
+                        }
+                        className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
+                      />
+                      <input
+                        type="text"
+                        value={editingAddress.addressLine1}
+                        onChange={(e) =>
+                          setEditingAddress((prev) => ({
+                            ...prev,
+                            addressLine1: e.target.value,
+                          }))
+                        }
+                        className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
+                      />
+                      <input
+                        type="text"
+                        value={editingAddress.city}
+                        onChange={(e) =>
+                          setEditingAddress((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
+                        }
+                        className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
+                      />
+                      <input
+                        type="text"
+                        value={editingAddress.postalCode}
+                        onChange={(e) =>
+                          setEditingAddress((prev) => ({
+                            ...prev,
+                            postalCode: e.target.value,
+                          }))
+                        }
+                        className="bg-[#2a1f0f] rounded px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div className="flex gap-2">
                       <button
-                        onClick={handleAddAddress}
-                        className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+                        onClick={() => handleSaveEditedAddress(editingAddressId)}
+                        className="bg-orange-600 text-white px-3 py-2 rounded"
                       >
-                        Add Address
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="px-3 py-2 rounded border border-white"
+                      >
+                        Cancel
                       </button>
                     </div>
-                  )}
-                </div>
-              </DarkCard>
-            )}
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowAddAddress(!showAddAddress)}
+                  className="text-orange-600 hover:text-orange-700 text-sm"
+                >
+                  + Add New Address
+                </button>
+                {showAddAddress && (
+                  <div className="bg-[#2a1f0f] p-4 rounded mt-4 space-y-3">
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleUseCurrentLocation}
+                        className="bg-orange-600 text-white px-3 py-1 rounded hover:bg-orange-700 flex items-center gap-2 text-sm"
+                      >
+                        <FaLocationArrow /> Use my current location
+                      </button>
+                    </div>
+                    {locationError && (
+                      <div className="text-red-400 text-sm">
+                        {locationError}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Label (e.g., Home, Work)"
+                        value={newAddress.label}
+                        onChange={(e) =>
+                          setNewAddress((prev) => ({
+                            ...prev,
+                            label: e.target.value,
+                          }))
+                        }
+                        className="bg-[#1a1209] rounded px-3 py-2 text-white"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Address Line 1"
+                        value={newAddress.addressLine1}
+                        onChange={(e) =>
+                          setNewAddress((prev) => ({
+                            ...prev,
+                            addressLine1: e.target.value,
+                          }))
+                        }
+                        className="bg-[#1a1209] rounded px-3 py-2 text-white"
+                      />
+                      {/* Address Line 2 removed — use Address Line 1 + City + Postal Code */}
+                      <input
+                        type="text"
+                        placeholder="City"
+                        value={newAddress.city}
+                        onChange={(e) =>
+                          setNewAddress((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
+                        }
+                        className="bg-[#1a1209] rounded px-3 py-2 text-white"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Postal Code"
+                        value={newAddress.postalCode}
+                        onChange={(e) =>
+                          setNewAddress((prev) => ({
+                            ...prev,
+                            postalCode: e.target.value,
+                          }))
+                        }
+                        className="bg-[#1a1209] rounded px-3 py-2 text-white"
+                      />
+                      <textarea
+                        placeholder="Delivery Instructions (optional)"
+                        value={newAddress.instructions}
+                        onChange={(e) =>
+                          setNewAddress((prev) => ({
+                            ...prev,
+                            instructions: e.target.value,
+                          }))
+                        }
+                        className="bg-[#1a1209] rounded px-3 py-2 text-white md:col-span-2"
+                        rows="2"
+                      />
+                    </div>
+                    <button
+                      onClick={handleAddAddress}
+                      className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+                    >
+                      Add Address
+                    </button>
+                  </div>
+                )}
+              </div>
+            </DarkCard>
           </div>
 
           {/* Right Column: Order Summary */}
@@ -649,12 +628,10 @@ export default function Checkout() {
                   <span>Tax</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
-                {deliveryMethod === "home" && (
-                  <div className="flex justify-between">
-                    <span>Delivery Fee</span>
-                    <span>${deliveryFee.toFixed(2)}</span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span>Delivery Fee</span>
+                  <span>${deliveryFee.toFixed(2)}</span>
+                </div>
                 <div className="flex justify-between font-bold text-lg border-t border-[#5a3f1a] pt-2">
                   <span>Total</span>
                   <span>${total.toFixed(2)}</span>
