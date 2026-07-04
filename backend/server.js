@@ -31,11 +31,13 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'https://spicehutcanada.org',
+  'https://www.spicehutcanada.org',
   'https://spicehutcanada.com',
+  'https://www.spicehutcanada.com',
   'https://spicehut-8mqx.onrender.com',
 ].filter(Boolean);
 
-const allowedOriginPatterns = [/\.onrender\.com$/];
+const allowedOriginPatterns = [/\.onrender\.com$/, /spicehutcanada\.org$/, /spicehutcanada\.com$/];
 
 app.use(cors({
   origin: (origin, callback) => {
