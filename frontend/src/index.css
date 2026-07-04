@@ -307,3 +307,49 @@ body {
   background: linear-gradient(90deg, #F47A20, #D9A441);
   border-radius: 2px;
 }
+
+/* ===== MOBILE SCROLL-SNAP CAROUSEL ===== */
+.snap-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  gap: 0.75rem;
+  padding-bottom: 0.25rem;
+}
+.snap-carousel::-webkit-scrollbar {
+  display: none;
+}
+.snap-carousel > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* ===== FOOTER MOBILE ACCORDION ===== */
+.footer-accordion summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.footer-accordion summary::-webkit-details-marker {
+  display: none;
+}
+.footer-accordion summary .chevron-icon {
+  transition: transform 0.25s ease;
+}
+.footer-accordion[open] summary .chevron-icon {
+  transform: rotate(180deg);
+}
+
+/* ===== SCROLLBAR HIDE UTILITY ===== */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

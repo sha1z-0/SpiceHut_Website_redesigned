@@ -62,7 +62,7 @@ const Header = () => {
             {/* Left: Brand + Mobile Menu */}
             <div className="flex items-center gap-3 min-w-0">
               <button onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="lg:hidden text-white hover:text-[#F47A20] transition p-1" aria-label="Menu">
+                className="lg:hidden text-white hover:text-[#F47A20] transition p-1 min-w-[44px] min-h-[44px]" aria-label="Menu">
                 {showMobileMenu ? (
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 ) : (
@@ -88,7 +88,7 @@ const Header = () => {
             {/* Right: Cart + Auth */}
             <div className="flex items-center gap-2">
               <button onClick={() => navigate("/user/cart")}
-                className="relative text-white hover:text-[#F47A20] transition p-2 rounded-full hover:bg-white/10" aria-label="Cart">
+                className="relative text-white hover:text-[#F47A20] transition p-2 min-w-[44px] min-h-[44px] rounded-full hover:bg-white/10" aria-label="Cart">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 {cartCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-[#F47A20] text-white text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-[#F47A20]/30">{cartCountLabel}</span>
@@ -99,7 +99,7 @@ const Header = () => {
                 /* Authenticated: Profile dropdown */
                 <div className="relative" ref={dropdownRef}>
                   <button onClick={() => setShowDropdown(!showDropdown)}
-                    className="text-white hover:text-[#F47A20] transition p-2 rounded-full hover:bg-white/10" aria-label="Profile">
+                    className="text-white hover:text-[#F47A20] transition p-2 min-w-[44px] min-h-[44px] rounded-full hover:bg-white/10" aria-label="Profile">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                   </button>
                   {showDropdown && (
@@ -122,7 +122,7 @@ const Header = () => {
               ) : (
                 /* Guest: Sign In button */
                 <button onClick={handleSignIn}
-                  className="btn-primary !py-2 !px-5 text-sm !shadow-none ml-1">
+                  className="btn-primary !py-2 !px-5 text-sm !shadow-none ml-1 min-h-[44px]">
                   Sign In
                 </button>
               )}
