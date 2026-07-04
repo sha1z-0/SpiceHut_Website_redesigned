@@ -5,150 +5,127 @@ import { useAuth } from "../contexts/AuthContext";
 
 const CartContext = createContext();
 
+const getCartKey = (userId) => (userId ? `cart_${userId}` : "cart_guest");
+const getPointsKey = (userId) => (userId ? `loyalty_${userId}` : "loyalty_guest");
+const BRANCH_KEY = "selectedBranch";
+
 export function CartProvider({ children }) {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [selectedBranch, setSelectedBranch] = useState(() => {
+    try { const s = sessionStorage.getItem(BRANCH_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
   const [toast, setToast] = useState({ visible: false, message: "" });
+  const [prevUserId, setPrevUserId] = useState(null);
 
-  // Load cart and loyalty points from localStorage when user changes
+  // Load cart on mount and when user changes
   useEffect(() => {
-    if (user && user._id) {
-      const savedCart = localStorage.getItem(`cart_${user._id}`);
-      if (savedCart) {
-        try {
-          setCartItems(JSON.parse(savedCart));
-        } catch (e) {
-          console.error("Failed to parse saved cart:", e);
-          setCartItems([]);
-        }
-      } else {
-        setCartItems([]);
-      }
+    const userId = user?._id || null;
+    const cartKey = getCartKey(userId);
 
-      const savedPoints = localStorage.getItem(`loyalty_${user._id}`);
-      if (savedPoints) {
+    if (userId && prevUserId === null) {
+      const guestCart = localStorage.getItem("cart_guest");
+      if (guestCart) {
         try {
-          setLoyaltyPoints(parseInt(savedPoints, 10) || 0);
-        } catch (e) {
-          console.error("Failed to parse saved loyalty points:", e);
-          setLoyaltyPoints(0);
-        }
-      } else {
-        setLoyaltyPoints(0);
+          const parsed = JSON.parse(guestCart);
+          if (parsed.length > 0) {
+            setCartItems(parsed);
+            localStorage.setItem(cartKey, guestCart);
+            localStorage.removeItem("cart_guest");
+            setPrevUserId(userId);
+            return;
+          }
+        } catch {}
       }
+    }
+
+    const savedCart = localStorage.getItem(cartKey);
+    if (savedCart) {
+      try { setCartItems(JSON.parse(savedCart)); } catch { setCartItems([]); }
     } else {
       setCartItems([]);
-      setLoyaltyPoints(0);
     }
+
+    if (userId) {
+      const savedPoints = localStorage.getItem(getPointsKey(userId));
+      if (savedPoints) { try { setLoyaltyPoints(parseInt(savedPoints, 10) || 0); } catch { setLoyaltyPoints(0); } }
+    }
+
+    setPrevUserId(userId);
   }, [user]);
 
-  // Save cart to localStorage whenever cartItems change
+  // Persist cart
   useEffect(() => {
-    if (user && user._id) {
-      localStorage.setItem(`cart_${user._id}`, JSON.stringify(cartItems));
-    }
+    localStorage.setItem(getCartKey(user?._id || null), JSON.stringify(cartItems));
   }, [cartItems, user]);
 
-  // Save loyalty points to localStorage whenever loyaltyPoints change
+  // Persist loyalty
   useEffect(() => {
-    if (user && user._id) {
-      localStorage.setItem(`loyalty_${user._id}`, loyaltyPoints.toString());
+    if (user?._id) {
+      localStorage.setItem(getPointsKey(user._id), loyaltyPoints.toString());
     }
   }, [loyaltyPoints, user]);
+
+  // Persist selected branch to sessionStorage
+  useEffect(() => {
+    if (selectedBranch) {
+      sessionStorage.setItem(BRANCH_KEY, JSON.stringify(selectedBranch));
+    } else {
+      sessionStorage.removeItem(BRANCH_KEY);
+    }
+  }, [selectedBranch]);
 
   const showToast = (message, ms = 1800) => {
     setToast({ visible: true, message });
     setTimeout(() => setToast({ visible: false, message: "" }), ms);
   };
 
-  // Add item to cart
   const addToCart = (dish, quantity = 1) => {
     setCartItems((prev) => {
       const dishSpice = (dish?.spiceLevel || "").toString();
       const existing = prev.find(
-        (item) => (
-          item.name === dish.name &&
-          item.category === dish.category &&
-          (item.spiceLevel || "").toString() === dishSpice
-        )
+        (item) => item.name === dish.name && item.category === dish.category && (item.spiceLevel || "").toString() === dishSpice
       );
       if (existing) {
         return prev.map((item) =>
-          (
-            item.name === dish.name &&
-            item.category === dish.category &&
-            (item.spiceLevel || "").toString() === dishSpice
-          )
-            ? { ...item, quantity: existing.quantity + quantity }
-            : item
+          (item.name === dish.name && item.category === dish.category && (item.spiceLevel || "").toString() === dishSpice)
+            ? { ...item, quantity: existing.quantity + quantity } : item
         );
       }
       return [...prev, { ...dish, quantity }];
     });
-    // show a small confirmation when item added
     showToast(`${dish.name} added to cart`);
   };
 
-  // Remove item from cart
   const removeFromCart = (name, category, spiceLevel = "") => {
     setCartItems((prev) =>
-      prev.filter((item) => !(
-        item.name === name &&
-        item.category === category &&
-        (item.spiceLevel || "").toString() === (spiceLevel || "").toString()
-      ))
+      prev.filter((item) => !(item.name === name && item.category === category && (item.spiceLevel || "").toString() === (spiceLevel || "").toString()))
     );
   };
 
-  // Update quantity
   const updateQuantity = (name, category, quantity, spiceLevel = "") => {
     setCartItems((prev) =>
       prev.map((item) =>
-        (
-          item.name === name &&
-          item.category === category &&
-          (item.spiceLevel || "").toString() === (spiceLevel || "").toString()
-        )
-          ? { ...item, quantity }
-          : item
+        (item.name === name && item.category === category && (item.spiceLevel || "").toString() === (spiceLevel || "").toString())
+          ? { ...item, quantity } : item
       )
     );
   };
 
-  // Empty cart
   const emptyCart = () => setCartItems([]);
 
-  // Loyalty points logic
-  const addLoyaltyPoints = (amount) => {
-    // 5 points for every $10 spent
-    setLoyaltyPoints((prev) => prev + Math.floor(amount / 10) * 5);
-  };
-
-  const useLoyaltyDiscount = () => {
-    if (loyaltyPoints >= 100) {
-      setLoyaltyPoints((prev) => prev - 100);
-      return 1; // $1 discount
-    }
-    return 0;
-  };
+  const addLoyaltyPoints = (amount) => { setLoyaltyPoints((prev) => prev + Math.floor(amount / 10) * 5); };
+  const useLoyaltyDiscount = () => { if (loyaltyPoints >= 100) { setLoyaltyPoints((prev) => prev - 100); return 1; } return 0; };
+  const applyInstantRedemption = () => 0;
 
   return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        emptyCart,
-        loyaltyPoints,
-        addLoyaltyPoints,
-        useLoyaltyDiscount,
-        setLoyaltyPoints,
-        toast,
-        showToast,
-      }}
-    >
+    <CartContext.Provider value={{
+      cartItems, addToCart, removeFromCart, updateQuantity, emptyCart,
+      loyaltyPoints, addLoyaltyPoints, useLoyaltyDiscount, setLoyaltyPoints,
+      toast, showToast, applyInstantRedemption,
+      selectedBranch, setSelectedBranch,
+    }}>
       {children}
     </CartContext.Provider>
   );
@@ -157,3 +134,4 @@ export function CartProvider({ children }) {
 export function useCart() {
   return useContext(CartContext);
 }
+

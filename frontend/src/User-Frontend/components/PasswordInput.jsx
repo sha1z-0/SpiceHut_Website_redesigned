@@ -3,22 +3,12 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { calculateStrength } from "../utils/passwordUtils";
 
 const PasswordInput = ({
-  value,
-  onChange,
-  placeholder = "Password",
-  errors = [],
-  showStrengthMeter = true,
-  className = "",
-  inputClassName = "",
-  ...props
+  value, onChange, placeholder = "Password",
+  errors = [], showStrengthMeter = true,
+  className = "", inputClassName = "", ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-
   const strength = calculateStrength(value);
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -28,52 +18,36 @@ const PasswordInput = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={
-            inputClassName ||
-            "w-full pl-3 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-          }
+          className={`input-premium pr-12 ${inputClassName}`}
           {...props}
         />
         <button
           type="button"
-          onClick={togglePasswordVisibility}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#2B1D17] p-1 rounded-lg hover:bg-gray-100 transition-colors"
         >
-          {showPassword ? (
-            <FiEyeOff className="h-5 w-5" />
-          ) : (
-            <FiEye className="h-5 w-5" />
-          )}
+          {showPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
         </button>
       </div>
 
       {showStrengthMeter && value && (
-        <div className="space-y-1">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Password Strength:</span>
-            <span
-              className={`font-medium ${strength.color
-                .replace("bg-", "text-")
-                .replace("-500", "-600")}`}
-            >
+        <div className="space-y-1 px-0.5">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-[#2B1D17]/40">Strength</span>
+            <span className={`font-semibold ${strength.color.replace("bg-", "text-").replace("-500", "-600")}`}>
               {strength.label} ({Math.round(strength.percentage)}%)
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full transition-all duration-300 ${strength.color}`}
-              style={{ width: `${strength.percentage}%` }}
-            ></div>
+          <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-300 ${strength.color}`} style={{ width: `${strength.percentage}%` }} />
           </div>
         </div>
       )}
 
       {errors.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-0.5 px-0.5">
           {errors.map((error, index) => (
-            <p key={index} className="text-sm text-red-600">
-              {error}
-            </p>
+            <p key={index} className="text-xs text-red-500 font-medium">{error}</p>
           ))}
         </div>
       )}

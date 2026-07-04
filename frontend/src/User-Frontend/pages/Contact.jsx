@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { contentAPI, branchAPI } from '../../services/api';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock, FaPaperPlane } from 'react-icons/fa';
 
-const Contact = () => {
+export default function Contact() {
   const [contactContent, setContactContent] = useState(null);
   const [branchInfo, setBranchInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,142 +11,90 @@ const Contact = () => {
 
   useEffect(() => {
     (async () => {
-      try {
-        const data = await contentAPI.getContent();
-        if (data && data.contact) {
-          setContactContent(data.contact);
-        } else {
-          setContactContent(null);
-        }
-      } catch (err) {
-        console.error('Failed to load contact content from backend', err);
-        setContactContent(null);
-      } finally {
-        setLoading(false);
-      }
+      try { const data = await contentAPI.getContent(); setContactContent(data?.contact || null); }
+      catch (err) { setContactContent(null); }
+      finally { setLoading(false); }
     })();
   }, []);
 
-  // If a branchId query param is present (from Support -> Contact), fetch branch info by id
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const branchId = params.get('branchId');
     if (!branchId) return;
-
     (async () => {
-      try {
-        const branch = await branchAPI.getBranch(branchId);
-        if (branch) setBranchInfo(branch);
-      } catch (err) {
-        // no branch found or error - keep branchInfo null and fall back to contact content
-        console.warn('No branch found for id', branchId, err?.response?.data || err.message || err);
-      }
+      try { const branch = await branchAPI.getBranch(branchId); if (branch) setBranchInfo(branch); }
+      catch (err) { console.warn('Branch not found', err); }
     })();
   }, [location.search]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!contactContent) return <div className="min-h-screen flex items-center justify-center">Contact information is not available.</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-[#2B1D17]/60">Loading...</div>;
+  if (!contactContent) return <div className="min-h-screen flex items-center justify-center text-[#2B1D17]/60">Contact info not available.</div>;
 
   const params = new URLSearchParams(location.search);
   const branchIdParam = params.get('branchId');
+  const displayPhone = branchIdParam ? (branchInfo?.phone || contactContent.phone) : contactContent.phone;
+  const displayAddress = branchIdParam ? (branchInfo?.fullAddress || contactContent.address) : contactContent.address;
 
   return (
-    <div className="min-h-screen bg-[#FF6A00] flex flex-col">
-      <section className="py-16 bg-[#4B0B0B] text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">{contactContent.title}</h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
-            Get in touch with us! We're here to serve you the best culinary experience.
-          </p>
+    <div className="min-h-screen bg-[#FFF8F1]">
+      <section className="relative bg-[#2B1D17] pt-32 pb-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Get In Touch</span>
+          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">{contactContent.title}</h1>
+          <p className="text-white/70 text-lg max-w-2xl mx-auto">We're here to serve you the best culinary experience.</p>
         </div>
       </section>
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-[#3B2410] p-6 rounded-lg">
-            <h2 className="text-2xl font-bold text-white mb-4">Contact Information</h2>
-            <div className="space-y-4 text-white">
-              {/* Address: If branchId param present show only branch address (if available). Otherwise show site static address. */}
-              {branchIdParam ? (
-                branchInfo?.fullAddress ? (
-                  <div>
-                    <h3 className="font-semibold mb-2">Address</h3>
-                    <p className="opacity-90">{branchInfo.fullAddress}</p>
-                  </div>
-                ) : null
-              ) : (
-                <div>
-                  <h3 className="font-semibold mb-2">Address</h3>
-                  <p className="opacity-90">{contactContent.address}</p>
-                </div>
-              )}
 
-              {/* Phone: If branchId param present show only branch phone (if available). Otherwise show site static phone. */}
-              {branchIdParam ? (
-                branchInfo?.phone ? (
-                  <div>
-                    <h3 className="font-semibold mb-2">Phone</h3>
-                    <p className="opacity-90">{branchInfo.phone}</p>
-                  </div>
-                ) : null
-              ) : (
-                <div>
-                  <h3 className="font-semibold mb-2">Phone</h3>
-                  <p className="opacity-90">{contactContent.phone}</p>
+      <section className="py-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Info Card */}
+          <div className="card-premium p-8">
+            <h2 className="font-serif text-2xl font-bold text-[#2B1D17] mb-6">Contact Information</h2>
+            <div className="space-y-6">
+              {displayAddress && (
+                <div className="flex gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-[#F47A20]/10 flex items-center justify-center flex-shrink-0"><FaMapMarkerAlt className="text-[#F47A20]" /></div>
+                  <div><h3 className="font-semibold text-[#2B1D17] text-sm">Address</h3><p className="text-[#2B1D17]/60 text-sm">{displayAddress}</p></div>
                 </div>
               )}
-              <div>
-                <h3 className="font-semibold mb-2">Email</h3>
-                <p className="opacity-90">{contactContent.email}</p>
+              {displayPhone && (
+                <div className="flex gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-[#F47A20]/10 flex items-center justify-center flex-shrink-0"><FaPhone className="text-[#F47A20]" /></div>
+                  <div><h3 className="font-semibold text-[#2B1D17] text-sm">Phone</h3><p className="text-[#2B1D17]/60 text-sm">{displayPhone}</p></div>
+                </div>
+              )}
+              <div className="flex gap-4">
+                <div className="w-11 h-11 rounded-xl bg-[#F47A20]/10 flex items-center justify-center flex-shrink-0"><FaEnvelope className="text-[#F47A20]" /></div>
+                <div><h3 className="font-semibold text-[#2B1D17] text-sm">Email</h3><p className="text-[#2B1D17]/60 text-sm">{contactContent.email}</p></div>
               </div>
-              <div>
-                <h3 className="font-semibold mb-4">Business Hours</h3>
-                <div className="space-y-1 text-sm">
-                  {Object.entries(contactContent.hours).map(([day, hours]) => (
-                    <div key={day} className="flex justify-between">
-                      <span className="capitalize">{day}:</span>
-                      <span>{hours}</span>
-                    </div>
-                  ))}
+              <div className="flex gap-4">
+                <div className="w-11 h-11 rounded-xl bg-[#F47A20]/10 flex items-center justify-center flex-shrink-0"><FaClock className="text-[#F47A20]" /></div>
+                <div>
+                  <h3 className="font-semibold text-[#2B1D17] text-sm mb-2">Hours</h3>
+                  <div className="space-y-1 text-xs">
+                    {Object.entries(contactContent.hours || {}).map(([day, hours]) => (
+                      <div key={day} className="flex justify-between gap-8 text-[#2B1D17]/60"><span className="capitalize">{day}</span><span>{hours}</span></div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div className="bg-[#3B2410] p-6 rounded-lg">
-            <h2 className="text-2xl font-bold text-white mb-4">Send us a Message</h2>
-            <form className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  className="w-full px-4 py-3 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Your Email"
-                  className="w-full px-4 py-3 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:outline-none"
-                />
-              </div>
-              <div>
-                <textarea
-                  rows="4"
-                  placeholder="Your Message"
-                  className="w-full px-4 py-3 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-[#FF6A00] focus:outline-none"
-                ></textarea>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-[#FF6A00] text-white py-3 rounded-lg hover:bg-[#e55a00] transition-colors font-semibold"
-              >
-                Send Message
+
+          {/* Form Card */}
+          <div className="card-premium p-8">
+            <h2 className="font-serif text-2xl font-bold text-[#2B1D17] mb-6">Send us a Message</h2>
+            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <input type="text" placeholder="Your Name" className="input-premium" />
+              <input type="email" placeholder="Your Email" className="input-premium" />
+              <textarea rows="4" placeholder="Your Message" className="input-premium resize-none" />
+              <button type="submit" className="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                <FaPaperPlane /> Send Message
               </button>
             </form>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
-};
-
-export default Contact;
+}

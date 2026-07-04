@@ -93,13 +93,9 @@ const addAddress = async (req, res) => {
   const finalCountry = country || '';
 
   const newAddress = { label, address: finalAddress, city: finalCity, province: finalProvince || '', country: finalCountry || '', postalCode: finalPostal, isDefault: isDefault || false };
-    if (typeof latitude !== 'undefined' && typeof longitude !== 'undefined') {
-      const lat = Number(latitude);
-      const lng = Number(longitude);
-      if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-        newAddress.latitude = lat;
-        newAddress.longitude = lng;
-      }
+    if (typeof latitude === 'number' && typeof longitude === 'number' && !Number.isNaN(latitude) && !Number.isNaN(longitude)) {
+      newAddress.latitude = latitude;
+      newAddress.longitude = longitude;
     }
 
     // If coordinates are not provided, attempt server-side forward geocode based on the provided address (addressLine1, city, province, postalCode, country)
@@ -188,8 +184,8 @@ const updateAddress = async (req, res) => {
     }
 
     // Build updated address object
-    let updatedLatitude = typeof latitude !== 'undefined' ? Number(latitude) : existing.latitude;
-    let updatedLongitude = typeof longitude !== 'undefined' ? Number(longitude) : existing.longitude;
+    let updatedLatitude = (typeof latitude === 'number' && !Number.isNaN(latitude)) ? latitude : existing.latitude;
+    let updatedLongitude = (typeof longitude === 'number' && !Number.isNaN(longitude)) ? longitude : existing.longitude;
 
     // If coords are missing try server-side forward geocode using updated components (include province/country)
   const finalProvinceForGeo = (typeof province !== 'undefined' ? province : (existing.province || '')) || '';

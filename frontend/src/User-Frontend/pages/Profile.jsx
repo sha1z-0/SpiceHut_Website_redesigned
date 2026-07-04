@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FaUser,
-  FaEnvelope,
-  FaPhone,
-  FaClock,
-  FaGift,
-  FaHome,
-  FaBriefcase,
-  FaTrash,
-  FaStar,
-  FaMapMarkerAlt,
-  FaRedo,
-  FaLocationArrow,
-} from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaClock, FaGift, FaTrash, FaStar, FaMapMarkerAlt, FaRedo, FaLocationArrow, FaHistory, FaEdit, FaCheck, FaPlus, FaLock, FaShieldAlt } from "react-icons/fa";
 import { useCart } from "../context.cart.jsx";
 import { profileAPI, orderAPI, utilsAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext.jsx";
@@ -50,1110 +37,407 @@ const Profile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    label: "",
-    addressLine1: "",
-    city: "",
-    postalCode: "",
-    instructions: "",
-    latitude: null,
-    longitude: null,
-  });
+  const [newAddress, setNewAddress] = useState({ label: "", addressLine1: "", city: "", postalCode: "", instructions: "", latitude: null, longitude: null });
   const [locationError, setLocationError] = useState(null);
-
   const [loyaltyPoints, setLoyaltyPointsState] = useState(0);
   const nextRewardPoints = 100;
-  const _totalOrders = orderHistory.length;
-  const _totalSpent = orderHistory
-    .reduce((acc, order) => acc + (order.totalAmount || order.total || 0), 0)
-    .toFixed(2);
-  const _favoriteItem = "Butter Chicken";
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [activeTab, setActiveTab] = useState('profile');
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // Get profile from backend
         const serverProfile = await profileAPI.getProfile();
-
         if (serverProfile && serverProfile._id) {
-          // Map server shape to local profile fields
           const mapped = {
-            firstName:
-              serverProfile.name?.split(" ")?.[0] || serverProfile.name || "",
+            firstName: serverProfile.name?.split(" ")?.[0] || serverProfile.name || "",
             lastName: serverProfile.name?.split(" ")?.slice(1).join(" ") || "",
             email: serverProfile.email || "",
             phone: serverProfile.phone || "",
-            memberSince: serverProfile.createdAt
-              ? new Date(serverProfile.createdAt).toLocaleDateString()
-              : "—",
+            memberSince: serverProfile.createdAt ? new Date(serverProfile.createdAt).toLocaleDateString() : "—",
           };
           setProfile(mapped);
           setLoyaltyPointsState(serverProfile.loyaltyPoints || 0);
           setIsLoggedIn(true);
-          
-          // Persist to localStorage for other pages
-          localStorage.setItem(
-            "userInfo",
-            JSON.stringify({
-              fullName: `${mapped.firstName} ${mapped.lastName}`.trim(),
-              email: mapped.email,
-              _id: serverProfile._id,
-            })
-          );
-
-          // Fetch addresses and handle pending address in parallel
-          const pendingAddress = localStorage.getItem("pendingAddress");
-          
+          localStorage.setItem("userInfo", JSON.stringify({ fullName: `${mapped.firstName} ${mapped.lastName}`.trim(), email: mapped.email, _id: serverProfile._id }));
+          const pendingAddr = localStorage.getItem("pendingAddress");
           Promise.all([
             profileAPI.getAddresses().catch(() => []),
-            pendingAddress ? (async () => {
-              try {
-                const addressData = JSON.parse(pendingAddress);
-                const fullAddress = `${addressData.addressLine1}, ${addressData.city}, ${addressData.postalCode}`;
-                await profileAPI.addAddress({
-                  label: addressData.label,
-                  address: fullAddress,
-                  city: addressData.city,
-                  postalCode: addressData.postalCode,
-                  isDefault: false,
-                  latitude: addressData.latitude,
-                  longitude: addressData.longitude,
-                });
-                localStorage.removeItem("pendingAddress");
-                return profileAPI.getAddresses();
-              } catch (addErr) {
-                console.error("Failed to add pending address", addErr);
-                return null;
-              }
+            pendingAddr ? (async () => {
+              try { const ad = JSON.parse(pendingAddr); const fa = `${ad.addressLine1}, ${ad.city}, ${ad.postalCode}`; await profileAPI.addAddress({ label: ad.label, address: fa, city: ad.city, postalCode: ad.postalCode, isDefault: false, latitude: ad.latitude, longitude: ad.longitude }); localStorage.removeItem("pendingAddress"); return profileAPI.getAddresses(); } catch { return null; }
             })() : Promise.resolve(null)
-          ]).then(([initialAddresses, updatedAddresses]) => {
-            const finalAddresses = updatedAddresses || initialAddresses;
-            setAddresses(
-              (finalAddresses || []).map((addr) => ({ ...addr, id: String(addr._id) }))
-            );
-          });
-        } else {
-          // No server profile - treat as logged out
-          setIsLoggedIn(false);
-          setProfile(null);
-        }
-      } catch (err) {
-        console.error("Profile load error", err);
-        setError("Failed to load profile");
-        setIsLoggedIn(false);
-      } finally {
-        setLoading(false);
-      }
+          ]).then(([initial, updated]) => setAddresses(((updated || initial) || []).map(a => ({ ...a, id: String(a._id) }))));
+        } else { setIsLoggedIn(false); setProfile(null); }
+      } catch (err) { setError("Failed to load profile"); setIsLoggedIn(false); }
+      finally { setLoading(false); }
     })();
   }, []);
 
-  // Toggle edit mode for personal information. When turning edit mode off
-  // (i.e. user clicked Save), call handleSaveProfile to persist changes.
   const handleEditToggle = async () => {
-    // If we are switching from editing -> not editing, save first
-    if (isEditing) {
-      try {
-        await handleSaveProfile();
-      } catch (err) {
-        // handleSaveProfile already logs errors; keep editing mode if save failed
-        console.error("Error saving profile during toggle", err);
-        return;
-      }
-    }
-    setIsEditing((prev) => !prev);
+    if (isEditing) { try { await handleSaveProfile(); } catch { return; } }
+    setIsEditing(prev => !prev);
   };
 
-  const handleProfileChange = (e) => {
-    const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleProfileChange = (e) => { const { name, value } = e.target; setProfile(prev => ({ ...prev, [name]: value })); };
 
   const handleSaveProfile = async () => {
-    setError(null);
-    setLoading(true);
+    setError(null); setLoading(true);
     try {
-      // Build payload (simple merge)
-      const payload = {
-        name: `${profile.firstName || ""} ${profile.lastName || ""}`.trim(),
-        email: profile.email,
-        phone: profile.phone,
-      };
-      const updated = await profileAPI.updateProfile(payload);
-      if (updated) {
-        // update local storage and state
-        localStorage.setItem(
-          "userInfo",
-          JSON.stringify({ fullName: payload.name, email: payload.email })
-        );
-        // Optionally map updated response
-        setProfile((prev) => ({ ...prev, memberSince: prev.memberSince }));
-      }
-    } catch (err) {
-      console.error("Failed to save profile", err);
-      setError(err?.response?.data?.message || "Failed to update profile");
-    } finally {
-      setLoading(false);
-    }
+      const payload = { name: `${profile.firstName || ""} ${profile.lastName || ""}`.trim(), email: profile.email, phone: profile.phone };
+      await profileAPI.updateProfile(payload);
+      localStorage.setItem("userInfo", JSON.stringify({ fullName: payload.name, email: payload.email }));
+      setProfile(prev => ({ ...prev, memberSince: prev.memberSince }));
+    } catch (err) { setError(err?.response?.data?.message || "Failed to update profile"); }
+    finally { setLoading(false); }
   };
 
-  const handleNewPasswordChange = (e) => {
-    const value = e.target.value;
-    setNewPassword(value);
-    const errors = validatePassword(value);
-    setPasswordErrors(errors);
-  };
+  const handleNewPasswordChange = (e) => { setNewPassword(e.target.value); setPasswordErrors(validatePassword(e.target.value)); };
 
   const handleChangePassword = async () => {
-    setPasswordChangeError(null);
-    setPasswordChangeSuccess(null);
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordChangeError("Please provide and confirm your new password.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordChangeError("Passwords do not match.");
-      return;
-    }
-    // Validate password criteria
-    const passwordValidationErrors = validatePassword(newPassword);
-    if (passwordValidationErrors.length > 0) {
-      setPasswordChangeError(
-        "Please ensure your password meets all requirements."
-      );
-      return;
-    }
+    setPasswordChangeError(null); setPasswordChangeSuccess(null);
+    if (!currentPassword || !newPassword || !confirmPassword) { setPasswordChangeError("Please provide and confirm your new password."); return; }
+    if (newPassword !== confirmPassword) { setPasswordChangeError("Passwords do not match."); return; }
+    if (validatePassword(newPassword).length > 0) { setPasswordChangeError("Please ensure your password meets all requirements."); return; }
     setPasswordChangeLoading(true);
-    try {
-      await profileAPI.changePassword({ currentPassword, newPassword });
-      setPasswordChangeSuccess("Password updated successfully.");
-      setNewPassword("");
-      setConfirmPassword("");
-      setCurrentPassword("");
-      setPasswordErrors([]);
-      setShowChangePassword(false);
-    } catch (err) {
-      console.error("Failed to change password", err);
-      setPasswordChangeError(
-        err?.response?.data?.message || "Failed to update password."
-      );
-    } finally {
-      setPasswordChangeLoading(false);
-    }
+    try { await profileAPI.changePassword({ currentPassword, newPassword }); setPasswordChangeSuccess("Password updated successfully."); setNewPassword(""); setConfirmPassword(""); setCurrentPassword(""); setPasswordErrors([]); setShowChangePassword(false); }
+    catch (err) { setPasswordChangeError(err?.response?.data?.message || "Failed to update password."); }
+    finally { setPasswordChangeLoading(false); }
   };
 
   const handleSetDefaultAddress = (id) => {
-    // Update on server
     (async () => {
-      try {
-        // Find the address object
-        const addr = addresses.find((a) => a.id === id);
-        if (!addr) return;
-        await profileAPI.updateAddress(id, {
-          label: addr.label,
-          address: addr.address,
-          isDefault: true,
-        });
-        // Refresh addresses from server
-        const serverAddresses = await profileAPI.getAddresses();
-        setAddresses(serverAddresses.map((a) => ({ ...a, id: a._id })));
-      } catch (err) {
-        console.error("Failed to set default address", err);
-        alert("Unable to set default address.");
-      }
+      try { const addr = addresses.find(a => a.id === id); if (!addr) return; await profileAPI.updateAddress(id, { label: addr.label, address: addr.address, isDefault: true }); const srv = await profileAPI.getAddresses(); setAddresses(srv.map(a => ({ ...a, id: a._id }))); }
+      catch (err) { alert("Unable to set default address."); }
     })();
   };
 
   const handleDeleteAddress = (id) => {
-    (async () => {
-      try {
-        await profileAPI.deleteAddress(id);
-        const serverAddresses = await profileAPI.getAddresses();
-        setAddresses(serverAddresses.map((a) => ({ ...a, id: a._id })));
-      } catch (err) {
-        console.error("Failed to delete address", err);
-        alert("Unable to delete address.");
-      }
-    })();
-  };
-
-  const handleAddAddress = () => {
-    setShowAddAddress(true);
+    (async () => { try { await profileAPI.deleteAddress(id); const srv = await profileAPI.getAddresses(); setAddresses(srv.map(a => ({ ...a, id: a._id }))); } catch { alert("Unable to delete address."); } })();
   };
 
   const handleUseCurrentLocation = () => {
     setLocationError(null);
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser.");
-      return;
-    }
-
+    if (!navigator.geolocation) { setLocationError("Geolocation not supported."); return; }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords;
-          // Call server-side reverse geocode to get structured address
-          try {
-            const geo = await utilsAPI.reverseGeocode(latitude, longitude);
-            // geo: { formattedAddress, city, province, postalCode, country, latitude, longitude }
-            // Update the newAddress fields for quick add and also update user profile with currentLocation
-            setNewAddress((prev) => ({
-              ...prev,
-              addressLine1: geo.formattedAddress || prev.addressLine1,
-              city: geo.city || prev.city,
-              postalCode: geo.postalCode || prev.postalCode,
-              latitude,
-              longitude,
-            }));
-
-            // Persist user's current coordinates to profile so backend can use them when placing orders
-            try {
-              await profileAPI.updateProfile({
-                currentLocation: { latitude, longitude },
-              });
-            } catch (upErr) {
-              console.warn("Failed to save currentLocation to profile", upErr);
-            }
-          } catch (rgErr) {
-            console.error("Reverse geocode failed", rgErr);
-            const message =
-              rgErr?.response?.data?.message ||
-              rgErr?.message ||
-              "Unable to resolve your location to an address.";
-            setLocationError(message + " (reverse geocode)");
-          }
-        } catch (err) {
-          console.error("Geolocation handling failed", err);
-          setLocationError("Unable to read your location.");
-        }
+        try { const { latitude, longitude } = pos.coords; const geo = await utilsAPI.reverseGeocode(latitude, longitude); setNewAddress(prev => ({ ...prev, addressLine1: geo.formattedAddress || prev.addressLine1, city: geo.city || prev.city, postalCode: geo.postalCode || prev.postalCode })); }
+        catch (rgErr) { setLocationError(rgErr?.response?.data?.message || "Unable to resolve location."); }
       },
-      (err) => {
-        let message =
-          "Unable to get location, please enter your address manually.";
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            message =
-              "Location access denied. Please allow location access and try again.";
-            break;
-          case err.POSITION_UNAVAILABLE:
-            message = "Location information is unavailable.";
-            break;
-          case err.TIMEOUT:
-            message = "Location request timed out.";
-            break;
-          default:
-            break;
-        }
-        setLocationError(message);
-      },
+      (err) => { setLocationError(err.code === 1 ? "Location access denied." : "Unable to get location."); },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
     );
   };
 
-  const [editingAddressId, setEditingAddressId] = useState(null);
-  const [editingAddress, setEditingAddress] = useState(null);
-
   const handleSaveNewAddress = async () => {
-    if (
-      !newAddress.label ||
-      !newAddress.addressLine1 ||
-      !newAddress.city ||
-      !newAddress.postalCode
-    ) {
-      alert("Please fill in all required fields.");
-      return;
-    }
+    if (!newAddress.label || !newAddress.addressLine1 || !newAddress.city || !newAddress.postalCode) { alert("Please fill in all required fields."); return; }
     const fullAddress = `${newAddress.addressLine1}, ${newAddress.city}, ${newAddress.postalCode}`;
-    try {
-      const added = await profileAPI.addAddress({
-        label: newAddress.label,
-        address: fullAddress,
-        city: newAddress.city,
-        postalCode: newAddress.postalCode,
-        isDefault: false,
-        latitude: newAddress.latitude,
-        longitude: newAddress.longitude,
-      });
-      setAddresses((prev) => [
-        ...prev,
-        { ...added.address, id: added.address._id },
-      ]);
-      setNewAddress({
-        label: "",
-        addressLine1: "",
-        city: "",
-        postalCode: "",
-        instructions: "",
-        latitude: null,
-        longitude: null,
-      });
-      setLocationError(null);
-      setShowAddAddress(false);
-    } catch (err) {
-      console.error("Failed to add address", err);
-      alert("Failed to add address. Please try again.");
-    }
+    try { const added = await profileAPI.addAddress({ label: newAddress.label, address: fullAddress, city: newAddress.city, postalCode: newAddress.postalCode, isDefault: false, latitude: newAddress.latitude, longitude: newAddress.longitude }); setAddresses(prev => [...prev, { ...added.address, id: added.address._id }]); setNewAddress({ label: "", addressLine1: "", city: "", postalCode: "", instructions: "", latitude: null, longitude: null }); setLocationError(null); setShowAddAddress(false); }
+    catch (err) { alert("Failed to add address."); }
   };
 
-  const handleEditClick = (addr) => {
-    setEditingAddressId(addr.id);
-    // split address into components if saved as single string
-    const parts = (addr.address || "").split(",").map((p) => p.trim());
-    const [line1 = "", city = "", postalCode = ""] = parts;
-    setEditingAddress({
-      label: addr.label || "",
-      addressLine1: line1,
-      city,
-      postalCode,
-    });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingAddressId(null);
-    setEditingAddress(null);
-  };
+  const handleEditClick = (addr) => { setEditingAddressId(addr.id); const parts = (addr.address || "").split(",").map(p => p.trim()); setEditingAddress({ label: addr.label || "", addressLine1: parts[0] || "", city: parts[1] || "", postalCode: parts[2] || "" }); };
+  const handleCancelEdit = () => { setEditingAddressId(null); setEditingAddress(null); };
 
   const handleSaveEditedAddress = async (id) => {
-    if (
-      !editingAddress ||
-      !editingAddress.addressLine1 ||
-      !editingAddress.city ||
-      !editingAddress.postalCode
-    ) {
-      alert("Please fill in all required fields.");
-      return;
-    }
+    if (!editingAddress?.addressLine1 || !editingAddress?.city || !editingAddress?.postalCode) { alert("Please fill all required fields."); return; }
     const fullAddress = `${editingAddress.addressLine1}, ${editingAddress.city}, ${editingAddress.postalCode}`;
-    try {
-      await profileAPI.updateAddress(id, {
-        label: editingAddress.label,
-        address: fullAddress,
-        city: editingAddress.city,
-        postalCode: editingAddress.postalCode,
-      });
-      const serverAddresses = await profileAPI.getAddresses();
-      setAddresses(serverAddresses.map((a) => ({ ...a, id: a._id })));
-      setEditingAddressId(null);
-      setEditingAddress(null);
-    } catch (err) {
-      console.error("Failed to update address", err);
-      alert("Failed to update address.");
-    }
+    try { await profileAPI.updateAddress(id, { label: editingAddress.label, address: fullAddress, city: editingAddress.city, postalCode: editingAddress.postalCode }); const srv = await profileAPI.getAddresses(); setAddresses(srv.map(a => ({ ...a, id: a._id }))); setEditingAddressId(null); setEditingAddress(null); }
+    catch (err) { alert("Failed to update address."); }
   };
 
-  const handleClearOrderHistory = () => {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
-    if (userInfo.email) {
-      localStorage.removeItem(`orders_${userInfo.email}`);
-      setOrderHistory([]);
-    }
-  };
-
-  // Lazy load order history when user clicks to view it
   const handleToggleOrderHistory = async () => {
-    const newShowState = !showOrderHistory;
-    setShowOrderHistory(newShowState);
-    
-    // Load orders only when opening and not already loaded
-    if (newShowState && !ordersLoaded && !ordersLoading) {
+    const newShow = !showOrderHistory; setShowOrderHistory(newShow);
+    if (newShow && !ordersLoaded && !ordersLoading) {
       setOrdersLoading(true);
-      try {
-        const serverOrders = await orderAPI.getUserOrders();
-        setOrderHistory(serverOrders || []);
-        setOrdersLoaded(true);
-      } catch (ordErr) {
-        console.error("Failed to load orders from server", ordErr);
-        setOrderHistory([]);
-      } finally {
-        setOrdersLoading(false);
-      }
+      try { const serverOrders = await orderAPI.getUserOrders(); setOrderHistory(serverOrders || []); setOrdersLoaded(true); }
+      catch { setOrderHistory([]); }
+      finally { setOrdersLoading(false); }
     }
   };
 
-  const _handleAddressChange = (id, field, value) => {
-    setAddresses((prev) =>
-      prev.map((addr) => (addr.id === id ? { ...addr, [field]: value } : addr))
-    );
-  };
-
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading profile...
-      </div>
-    );
-  if (!isLoggedIn)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-orange-500 text-white">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Not signed in</h2>
-          <p className="mb-6">
-            Please sign in to view and manage your profile and orders.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={() => navigate("/login")}
-              className="px-4 py-2 bg-orange-600 rounded"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => navigate("/register")}
-              className="px-4 py-2 border border-white rounded"
-            >
-              Register
-            </button>
-          </div>
+  if (loading) return <div className="min-h-screen bg-[#FFF8F1] flex items-center justify-center text-[#2B1D17]/60">Loading profile...</div>;
+  if (!isLoggedIn) return (
+    <div className="min-h-screen bg-[#FFF8F1] flex items-center justify-center">
+      <div className="text-center card-premium p-10 max-w-md">
+        <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#F47A20]/10 flex items-center justify-center"><FaUser className="text-2xl text-[#F47A20]" /></div>
+        <h2 className="font-serif text-2xl font-bold text-[#2B1D17] mb-3">Not signed in</h2>
+        <p className="text-[#2B1D17]/50 mb-8">Please sign in to view your profile.</p>
+        <div className="flex gap-3 justify-center">
+          <button onClick={() => navigate("/login")} className="btn-primary px-8">Sign In</button>
+          <button onClick={() => navigate("/register")} className="btn-secondary px-8">Register</button>
         </div>
       </div>
-    );
+    </div>
+  );
+
+  const pointsProgress = loyaltyPoints === 0 ? 0 : (loyaltyPoints % 100) || 100;
+  const tierLabel = loyaltyPoints >= 500 ? "Gold" : loyaltyPoints >= 200 ? "Silver" : "Classic";
+  const tierColor = loyaltyPoints >= 500 ? "text-[#D9A441]" : loyaltyPoints >= 200 ? "text-gray-400" : "text-[#F47A20]";
+  const ringProgress = pointsProgress;
 
   return (
-    <div className="min-h-screen bg-orange-500 flex flex-col">
-      <main className="flex-1 px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 text-white font-sans">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-center font-bold mb-1">
-            My Profile
-          </h1>
-          <p className="mb-4 sm:mb-6 text-center text-xs sm:text-sm">
-            Manage your account settings and preferences
-          </p>
-
-          {/* Personal Information */}
-          <div className="bg-[#3c2a1a] rounded-lg p-4 sm:p-5 md:p-6 mb-4 sm:mb-6 shadow-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                <FaUser className="text-sm sm:text-base" /> Personal Information
-              </h2>
-              <button
-                onClick={handleEditToggle}
-                className="bg-orange-600 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm hover:bg-orange-700"
-              >
-                {isEditing ? "Save" : "Edit"}
-              </button>
+    <div className="min-h-screen bg-[#FFF8F1]">
+      {/* Hero Header */}
+      <section className="relative bg-[#2B1D17] pt-32 pb-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#F47A20] to-[#D9A441] flex items-center justify-center shadow-xl shadow-[#F47A20]/30">
+              <span className="font-serif text-3xl font-bold text-white">{profile.firstName?.[0] || "U"}</span>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {/* First Name */}
-              <div>
-                <label className="text-xs font-semibold">First Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={profile.firstName}
-                    onChange={handleProfileChange}
-                    className="w-full bg-[#4a3a2a] rounded px-2 py-1 text-white text-sm min-h-[2rem]"
-                    placeholder="First Name"
-                  />
-                ) : (
-                  <p className="bg-[#4a3a2a] rounded px-2 py-1 text-sm text-white min-h-[2rem] flex items-center">
-                    {profile.firstName || (
-                      <span className="text-gray-400">First Name</span>
-                    )}
-                  </p>
-                )}
-              </div>
-
-              {/* Last Name */}
-              <div>
-                <label className="text-xs font-semibold">Last Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={profile.lastName}
-                    onChange={handleProfileChange}
-                    className="w-full bg-[#4a3a2a] rounded px-2 py-1 text-white text-sm min-h-[2rem]"
-                    placeholder="Last Name"
-                  />
-                ) : (
-                  <p className="bg-[#4a3a2a] rounded px-2 py-1 text-sm text-white min-h-[2rem] flex items-center">
-                    {profile.lastName || (
-                      <span className="text-gray-400">Last Name</span>
-                    )}
-                  </p>
-                )}
-              </div>
-
-              {/* Email */}
-              <div className="sm:col-span-2">
-                <label className="text-xs font-semibold flex items-center gap-1">
-                  <FaEnvelope className="text-xs" /> Email
-                </label>
-                {isEditing ? (
-                  <input
-                    type="email"
-                    name="email"
-                    value={profile.email}
-                    onChange={handleProfileChange}
-                    className="w-full bg-[#4a3a2a] rounded px-2 py-1 text-white text-sm min-h-[2rem]"
-                    placeholder="Email"
-                  />
-                ) : (
-                  <p className="bg-[#4a3a2a] rounded px-2 py-1 text-sm text-white min-h-[2rem] flex items-center break-all">
-                    {profile.email || (
-                      <span className="text-gray-400">Email</span>
-                    )}
-                  </p>
-                )}
-              </div>
-
-              {/* Phone Number */}
-              <div className="sm:col-span-2">
-                <label className="text-xs font-semibold flex items-center gap-1">
-                  <FaPhone className="text-xs" /> Phone Number
-                </label>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={profile.phone}
-                    onChange={handleProfileChange}
-                    className="w-full bg-[#4a3a2a] rounded px-2 py-1 text-white min-h-[2rem] text-sm"
-                    placeholder="Phone Number"
-                  />
-                ) : (
-                  <p className="bg-[#4a3a2a] rounded px-2 py-1 text-sm text-white min-h-[2rem] flex items-center">
-                    {profile.phone || (
-                      <span className="text-gray-400">Phone Number</span>
-                    )}
-                  </p>
-                )}
-              </div>
-
-              {/* Member Since */}
-              <div className="sm:col-span-2">
-                <label className="text-xs font-semibold flex items-center gap-1">
-                  <FaClock className="text-xs" /> Member Since
-                </label>
-                <p className="bg-[#4a3a2a] rounded px-2 py-1 text-sm text-white min-h-[2rem] flex items-center">
-                  {profile.memberSince || (
-                    <span className="text-gray-400">N/A</span>
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Main content grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* Left column */}
-            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-              {/* Delivery Addresses */}
-              <div className="bg-[#3c2a1a] rounded-lg p-3 sm:p-4 shadow-md">
-                <div
-                  className="flex justify-between items-center cursor-pointer mb-2"
-                  onClick={() => setShowAddresses(!showAddresses)}
-                >
-                  <h3 className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                    <FaEnvelope className="text-sm sm:text-base" /> Delivery
-                    Addresses ({addresses.length})
-                  </h3>
-                  <span className="text-sm sm:text-base">
-                    {showAddresses ? "▲" : "▼"}
-                  </span>
-                </div>
-                {showAddresses && (
-                  <div>
-                    {addresses.map((addr) => (
-                      <div
-                        key={addr.id}
-                        className="border border-[#5a3f1a] rounded p-2 sm:p-3 mb-3 flex flex-col sm:flex-row justify-between sm:items-center gap-2"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="text-sm sm:text-base font-semibold">
-                              {addr.label}
-                            </span>
-                            {addr.isDefault && (
-                              <span className="bg-red-700 text-xs px-2 py-0.5 rounded">
-                                Default
-                              </span>
-                            )}
-                          </div>
-
-                          {editingAddressId === addr.id && editingAddress ? (
-                            <div className="space-y-2">
-                              <input
-                                type="text"
-                                value={editingAddress.label}
-                                onChange={(e) =>
-                                  setEditingAddress((prev) => ({
-                                    ...prev,
-                                    label: e.target.value,
-                                  }))
-                                }
-                                className="bg-[#1a1209] rounded px-3 py-2 text-white mb-1"
-                              />
-                              <input
-                                type="text"
-                                value={editingAddress.addressLine1}
-                                onChange={(e) =>
-                                  setEditingAddress((prev) => ({
-                                    ...prev,
-                                    addressLine1: e.target.value,
-                                  }))
-                                }
-                                className="bg-[#1a1209] rounded px-3 py-2 text-white mb-1"
-                              />
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={editingAddress.city}
-                                  onChange={(e) =>
-                                    setEditingAddress((prev) => ({
-                                      ...prev,
-                                      city: e.target.value,
-                                    }))
-                                  }
-                                  className="bg-[#1a1209] rounded px-3 py-2 text-white flex-1"
-                                />
-                                <input
-                                  type="text"
-                                  value={editingAddress.postalCode}
-                                  onChange={(e) =>
-                                    setEditingAddress((prev) => ({
-                                      ...prev,
-                                      postalCode: e.target.value,
-                                    }))
-                                  }
-                                  className="bg-[#1a1209] rounded px-3 py-2 text-white w-32"
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-xs sm:text-sm break-words">
-                              {addr.address}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 justify-end sm:justify-start">
-                          {editingAddressId === addr.id ? (
-                            <>
-                              <button
-                                onClick={() => handleSaveEditedAddress(addr.id)}
-                                className="bg-orange-600 text-xs px-2 py-1 rounded hover:bg-orange-700 whitespace-nowrap"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="text-gray-300 text-xs px-2 py-1 rounded"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {!addr.isDefault && (
-                                <button
-                                  onClick={() =>
-                                    handleSetDefaultAddress(addr.id)
-                                  }
-                                  className="bg-orange-600 text-xs px-2 py-1 rounded hover:bg-orange-700 whitespace-nowrap"
-                                >
-                                  Set Default
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleEditClick(addr)}
-                                className="text-white text-xs px-2 py-1 rounded border border-white"
-                                title="Edit Address"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteAddress(addr.id)}
-                                className="text-red-600 hover:text-red-800 p-1"
-                                title="Delete Address"
-                              >
-                                <FaTrash className="text-sm sm:text-base" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {showAddAddress && (
-                      <div className="bg-[#2a1f0f] p-4 rounded mt-4 space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            placeholder="Label (e.g., Home, Work)"
-                            value={newAddress.label}
-                            onChange={(e) =>
-                              setNewAddress((prev) => ({
-                                ...prev,
-                                label: e.target.value,
-                              }))
-                            }
-                            className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                          />
-                          <div className="md:col-span-2 flex gap-2">
-                            <button
-                              onClick={handleUseCurrentLocation}
-                              className="bg-orange-600 text-white px-3 py-2 rounded hover:bg-orange-700 flex items-center gap-2 text-sm"
-                            >
-                              <FaLocationArrow className="text-xs" /> Use My
-                              Current Location
-                            </button>
-                          </div>
-                          {locationError && (
-                            <div className="md:col-span-2 text-red-400 text-sm">
-                              {locationError}
-                            </div>
-                          )}
-                          <input
-                            type="text"
-                            placeholder="Address Line 1"
-                            value={newAddress.addressLine1}
-                            onChange={(e) =>
-                              setNewAddress((prev) => ({
-                                ...prev,
-                                addressLine1: e.target.value,
-                              }))
-                            }
-                            className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                          />
-                          {/* Address Line 2 removed - use Address Line 1 + City + Postal Code */}
-                          <input
-                            type="text"
-                            placeholder="City"
-                            value={newAddress.city}
-                            onChange={(e) =>
-                              setNewAddress((prev) => ({
-                                ...prev,
-                                city: e.target.value,
-                              }))
-                            }
-                            className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Postal Code"
-                            value={newAddress.postalCode}
-                            onChange={(e) =>
-                              setNewAddress((prev) => ({
-                                ...prev,
-                                postalCode: e.target.value,
-                              }))
-                            }
-                            className="bg-[#1a1209] rounded px-3 py-2 text-white"
-                          />
-                          <textarea
-                            placeholder="Delivery Instructions (optional)"
-                            value={newAddress.instructions}
-                            onChange={(e) =>
-                              setNewAddress((prev) => ({
-                                ...prev,
-                                instructions: e.target.value,
-                              }))
-                            }
-                            className="bg-[#1a1209] rounded px-3 py-2 text-white md:col-span-2"
-                            rows="2"
-                          />
-                        </div>
-                        <button
-                          onClick={handleSaveNewAddress}
-                          className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
-                        >
-                          Add Address
-                        </button>
-                      </div>
-                    )}
-                    <button
-                      onClick={handleAddAddress}
-                      className="w-full bg-orange-600 text-xs sm:text-sm py-2 rounded hover:bg-orange-700"
-                    >
-                      + Add New Address
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Order History */}
-              <div className="bg-[#3c2a1a] rounded-lg p-3 sm:p-4 shadow-md">
-                <div
-                  className="flex justify-between items-center cursor-pointer mb-2"
-                  onClick={handleToggleOrderHistory}
-                >
-                  <h3 className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                    <FaEnvelope className="text-sm sm:text-base" /> Order
-                    History ({orderHistory.length})
-                  </h3>
-                  <span className="text-sm sm:text-base">
-                    {showOrderHistory ? "▲" : "▼"}
-                  </span>
-                </div>
-                {showOrderHistory && (
-                  <div className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-orange-600 scrollbar-track-[#3c2a1a]">
-                    <div>
-                      {ordersLoading ? (
-                        <div className="text-center py-4">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                          <p className="text-sm mt-2">Loading orders...</p>
-                        </div>
-                      ) : isLoggedIn ? (
-                        orderHistory.length > 0 ? (
-                          <>
-                            {/*    <button
-                            onClick={handleClearOrderHistory}
-                            className="w-full bg-red-600 text-white text-xs sm:text-sm py-2 rounded hover:bg-red-700 mb-3"
-                          >
-                            Clear All Orders
-                          </button> */}
-                            {orderHistory.map((order) => (
-                              <div
-                                key={order.orderId || order._id || order.id}
-                                className="border border-[#5a3f1a] rounded p-2 sm:p-3 mb-3 flex flex-col sm:flex-row justify-between sm:items-center gap-2"
-                              >
-                                <div className="flex-1">
-                                  <p className="text-xs sm:text-sm font-semibold">
-                                    Order ID: {order.orderId}
-                                  </p>
-                                  <p className="text-xs sm:text-sm font-semibold">
-                                    Order Date:{" "}
-                                    {new Date(
-                                      order.createdAt
-                                    ).toLocaleDateString()}
-                                  </p>
-                                  <p className="text-xs sm:text-sm break-words">
-                                    Items:{" "}
-                                    {order.items
-                                      .map((item) => item.name)
-                                      .join(", ")}
-                                  </p>
-                                  <p className="text-xs sm:text-sm font-semibold">
-                                    Total: ${
-                                      (order.totalAmount || order.total || 0).toFixed(2)
-                                    }
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    order.items.forEach((item) =>
-                                      addToCart(
-                                        {
-                                          menuItemId: item.menuItemId || null,
-                                          name: item.name,
-                                          price: item.price,
-                                          category: item.category || "Menu",
-                                          spiceLevel: item.spiceLevel || undefined,
-                                          specialInstructions: item.specialInstructions || "",
-                                        },
-                                        item.quantity || 1
-                                      )
-                                    );
-                                    navigate("/user/cart");
-                                  }}
-                                  className="bg-orange-600 text-white text-xs sm:text-sm px-3 py-1 rounded hover:bg-orange-700 flex items-center gap-1 justify-center whitespace-nowrap"
-                                >
-                                  <FaRedo className="text-xs" /> Reorder
-                                </button>
-                              </div>
-                            ))}
-                          </>
-                        ) : (
-                          <p className="text-xs sm:text-sm text-gray-400">
-                            No orders yet. Start ordering to see your history!
-                          </p>
-                        )
-                      ) : (
-                        <p className="text-xs sm:text-sm text-gray-400">
-                          Please log in to view your order history.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right column */}
-            <div className="space-y-4 sm:space-y-6">
-              {/* Loyalty Points */}
-              <div className="bg-[#3c2a1a] rounded-lg p-3 sm:p-4 shadow-md text-center">
-                <h3 className="text-sm sm:text-base font-semibold flex items-center justify-center gap-2 mb-4">
-                  <FaGift className="text-sm sm:text-base" /> Loyalty Points
-                </h3>
-                <div className="bg-red-900 rounded-full w-16 h-16 sm:w-20 sm:h-20 flex flex-col justify-center items-center mx-auto mb-4">
-                  <FaStar className="text-yellow-400 text-lg sm:text-xl" />
-                  <span className="text-white font-bold text-base sm:text-lg">
-                    {loyaltyPoints}
-                  </span>
-                  <span className="text-xs">Points</span>
-                </div>
-                <div className="bg-[#4a3a2a] rounded p-2 mb-2 text-xs">
-                  <p className="font-semibold">Next Reward</p>
-                  <p>100 points until $1 off your next order</p>
-                  <div className="bg-gray-600 rounded h-2 mt-1">
-                    <div
-                      className="bg-red-900 h-2 rounded"
-                      style={{
-                        width: `${
-                          (loyaltyPoints / (loyaltyPoints + nextRewardPoints)) *
-                          100
-                        }%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-                <ul className="text-xs text-left mb-2 space-y-1">
-                  <li>• Earn 1 point per $1 spent</li>
-                  <li>• 100 points = $1 discount</li>
-                  <li>• Points never expire</li>
-                </ul>
-              </div>
-              {/* Change Password */}
-              <div className="bg-[#3c2a1a] rounded-lg p-3 sm:p-4 shadow-md">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-sm sm:text-base font-semibold flex items-center gap-2">
-                    <FaBriefcase className="text-sm sm:text-base" /> Change
-                    Password
-                  </h3>
-                  <button
-                    onClick={() => setShowChangePassword((prev) => !prev)}
-                    className="text-xs bg-orange-600 px-2 py-1 rounded hover:bg-orange-700"
-                  >
-                    {showChangePassword ? "Close" : "Open"}
-                  </button>
-                </div>
-                {showChangePassword && (
-                  <div className="space-y-3">
-                    {passwordChangeError && (
-                      <div className="text-red-400 text-xs">
-                        {passwordChangeError}
-                      </div>
-                    )}
-                    {passwordChangeSuccess && (
-                      <div className="text-green-400 text-xs">
-                        {passwordChangeSuccess}
-                      </div>
-                    )}
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? "text" : "password"}
-                        placeholder="Current password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full bg-[#4a3a2a] rounded px-2 py-2 pr-10 text-white text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowCurrentPassword(!showCurrentPassword)
-                        }
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      >
-                        {showCurrentPassword ? (
-                          <FiEyeOff className="h-4 w-4" />
-                        ) : (
-                          <FiEye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    {/* Send verification code for password change (optional) */}
-                    <div className="mt-2">
-                      <label className="block text-xs text-gray-300 mb-1">Send verification code</label>
-                      <div className="flex items-center gap-2 mb-2">
-                        <label className="flex items-center gap-2 text-xs">
-                          <input type="radio" name="otpChange" value="sms" checked={otpMethodForChange === 'sms'} onChange={() => setOtpMethodForChange('sms')} />
-                          <span>SMS</span>
-                        </label>
-                        <label className="flex items-center gap-2 text-xs">
-                          <input type="radio" name="otpChange" value="email" checked={otpMethodForChange === 'email'} onChange={() => setOtpMethodForChange('email')} />
-                          <span>Email</span>
-                        </label>
-                      </div>
-                      <div>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setSendingChangeOtp(true);
-                            try {
-                              const email = profile?.email;
-                              // call resendVerification to send code to preferred method
-                              await (await import("../../services/api")).authAPI.resendVerification({ email, phone: profile?.phone, otpMethod: otpMethodForChange });
-                              setPasswordChangeSuccess('Verification code sent');
-                            } catch (err) {
-                              setPasswordChangeError(err.response?.data?.message || err.message || 'Failed to send code');
-                            } finally {
-                              setSendingChangeOtp(false);
-                            }
-                          }}
-                          className="w-full bg-orange-500 text-white py-2 rounded"
-                          disabled={sendingChangeOtp}
-                        >
-                          {sendingChangeOtp ? 'Sending...' : 'Send verification code'}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        placeholder="New password"
-                        value={newPassword}
-                        onChange={handleNewPasswordChange}
-                        className="w-full bg-[#4a3a2a] rounded px-2 py-2 pr-10 text-white text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      >
-                        {showNewPassword ? (
-                          <FiEyeOff className="h-4 w-4" />
-                        ) : (
-                          <FiEye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    {passwordErrors.length > 0 && (
-                      <div className="text-red-400 text-xs">
-                        {passwordErrors.map((error, index) => (
-                          <p key={index}>{error}</p>
-                        ))}
-                      </div>
-                    )}
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirm new password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full bg-[#4a3a2a] rounded px-2 py-2 pr-10 text-white text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                      >
-                        {showConfirmPassword ? (
-                          <FiEyeOff className="h-4 w-4" />
-                        ) : (
-                          <FiEye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    <button
-                      onClick={handleChangePassword}
-                      disabled={passwordChangeLoading}
-                      className="w-full bg-orange-600 text-white py-2 rounded hover:bg-orange-700"
-                    >
-                      {passwordChangeLoading
-                        ? "Updating..."
-                        : "Update Password"}
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div className="text-center sm:text-left">
+              <span className={`text-xs font-semibold uppercase tracking-widest ${tierColor}`}>{tierLabel} Member</span>
+              <h1 className="font-serif text-3xl sm:text-4xl font-bold text-white mt-2">{profile.firstName} {profile.lastName}</h1>
+              <p className="text-white/50 text-sm mt-1">{profile.email} • Member since {profile.memberSince}</p>
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Tab Navigation */}
+      <div className="sticky top-[88px] z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="flex gap-1 overflow-x-auto py-3">
+            {[ { id: 'profile', label: 'Profile', icon: <FaUser /> }, { id: 'loyalty', label: 'Loyalty', icon: <FaGift /> }, { id: 'addresses', label: 'Addresses', icon: <FaMapMarkerAlt /> }, { id: 'orders', label: 'Order History', icon: <FaHistory /> }, { id: 'security', label: 'Security', icon: <FaLock /> } ].map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                  activeTab === tab.id ? "bg-[#F47A20] text-white shadow-lg shadow-[#F47A20]/20" : "text-[#2B1D17]/50 hover:text-[#2B1D17] hover:bg-gray-100"
+                }`}>
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div className="card-premium p-6 sm:p-8 animate-fade-in-up">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-serif text-2xl font-bold text-[#2B1D17] flex items-center gap-2"><FaUser className="text-[#F47A20]" /> Personal Information</h2>
+              <button onClick={handleEditToggle} className={`text-sm py-2 px-5 rounded-full font-medium transition-all ${isEditing ? "bg-green-500 text-white" : "btn-secondary"}`}>
+                {isEditing ? <><FaCheck className="inline mr-1" /> Save</> : <><FaEdit className="inline mr-1" /> Edit</>}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div><label className="block text-sm font-medium text-[#2B1D17] mb-2">First Name</label>{isEditing ? <input type="text" name="firstName" value={profile.firstName} onChange={handleProfileChange} className="input-premium" /> : <p className="input-premium bg-gray-50 cursor-default">{profile.firstName || "—"}</p>}</div>
+              <div><label className="block text-sm font-medium text-[#2B1D17] mb-2">Last Name</label>{isEditing ? <input type="text" name="lastName" value={profile.lastName} onChange={handleProfileChange} className="input-premium" /> : <p className="input-premium bg-gray-50 cursor-default">{profile.lastName || "—"}</p>}</div>
+              <div><label className="block text-sm font-medium text-[#2B1D17] mb-2 flex items-center gap-1"><FaEnvelope className="text-[#2B1D17]/40" /> Email</label>{isEditing ? <input type="email" name="email" value={profile.email} onChange={handleProfileChange} className="input-premium" /> : <p className="input-premium bg-gray-50 cursor-default">{profile.email}</p>}</div>
+              <div><label className="block text-sm font-medium text-[#2B1D17] mb-2 flex items-center gap-1"><FaPhone className="text-[#2B1D17]/40" /> Phone</label>{isEditing ? <input type="tel" name="phone" value={profile.phone} onChange={handleProfileChange} className="input-premium" /> : <p className="input-premium bg-gray-50 cursor-default">{profile.phone || "—"}</p>}</div>
+              <div><label className="block text-sm font-medium text-[#2B1D17] mb-2 flex items-center gap-1"><FaClock className="text-[#2B1D17]/40" /> Member Since</label><p className="input-premium bg-gray-50 cursor-default">{profile.memberSince}</p></div>
+            </div>
+          </div>
+        )}
+
+        {/* Loyalty Tab */}
+        {activeTab === 'loyalty' && (
+          <div className="space-y-6 animate-fade-in-up">
+            {/* Premium Loyalty Hero Card */}
+            <div className="card-premium p-6 sm:p-8 bg-gradient-to-br from-[#2B1D17] via-[#2B1D17] to-[#3a2518] !text-white !border-0 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-[#D9A441]/5 blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-[#F47A20]/8 blur-3xl" />
+              <div className="relative z-10 flex flex-col lg:flex-row items-center gap-6">
+                <div className="relative">
+                  <div
+                    className="w-28 h-28 rounded-full p-2 transition-all duration-1000"
+                    style={{
+                      background: `conic-gradient(#F47A20 ${ringProgress}%, rgba(255,255,255,0.12) ${ringProgress}% 100%)`,
+                    }}
+                  >
+                    <div className="w-full h-full rounded-full bg-[#2B1D17] flex items-center justify-center shadow-inner">
+                      <div className="w-14 h-14 rounded-full bg-[#2B1D17]/40 border border-white/5" />
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-serif text-3xl font-bold text-white">{loyaltyPoints}</span>
+                    <span className="text-[10px] text-white/60 uppercase">points</span>
+                  </div>
+                </div>
+                <div className="text-center lg:text-left flex-1">
+                  <div className="inline-flex items-center gap-2 bg-[#D9A441]/20 rounded-full px-4 py-1 mb-3">
+                    <FaStar className="text-[#D9A441] text-xs" /><span className={`text-xs font-semibold ${tierColor}`}>{tierLabel} Tier</span>
+                  </div>
+                  <h2 className="font-serif text-2xl font-bold mb-2">Spice Hut Rewards</h2>
+                  <p className="text-white/60 text-sm max-w-md">
+                    {loyaltyPoints >= 100
+                      ? `You can redeem your points for $${Math.floor(loyaltyPoints / 100)}.00 off your next order!`
+                      : `Earn ${100 - loyaltyPoints} more points to unlock a $1.00 discount on your next order.`
+                    }
+                  </p>
+                  <div className="mt-4 w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#F47A20] to-[#D9A441] rounded-full transition-all duration-700" style={{ width: `${pointsProgress}%` }} />
+                  </div>
+                  <p className="text-white/40 text-xs mt-2">{100 - pointsProgress} points to next reward</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Rules */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[{icon: FaStar, title:"Earn 1pt per $1", desc:"Every dollar you spend earns you a point"}, {icon: FaGift, title:"100pts = $1 Off", desc:"Redeem points for instant discounts"}, {icon: FaShieldAlt, title:"Points Never Expire", desc:"Your rewards stay with you forever"}].map((item, i) => (
+                <div key={i} className="card-premium p-5 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#F47A20]/10 flex items-center justify-center"><item.icon className="text-[#F47A20] text-lg" /></div>
+                  <h3 className="font-serif text-sm font-bold text-[#2B1D17] mb-1">{item.title}</h3>
+                  <p className="text-[#2B1D17]/50 text-xs">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Addresses Tab */}
+        {activeTab === 'addresses' && (
+          <div className="card-premium p-6 sm:p-8 animate-fade-in-up">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-serif text-2xl font-bold text-[#2B1D17] flex items-center gap-2"><FaMapMarkerAlt className="text-[#F47A20]" /> Saved Addresses ({addresses.length})</h2>
+              <button onClick={() => setShowAddAddress(!showAddAddress)} className="btn-primary text-sm py-2.5 flex items-center gap-2"><FaPlus /> New Address</button>
+            </div>
+
+            {showAddAddress && (
+              <div className="bg-[#FFF5EB] p-5 rounded-2xl mb-6 space-y-3 border border-[#F47A20]/20">
+                <button onClick={handleUseCurrentLocation} className="btn-secondary w-full text-sm py-2.5 flex items-center justify-center gap-2"><FaLocationArrow /> Use Current Location</button>
+                {locationError && <p className="text-red-600 text-xs">{locationError}</p>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input placeholder="Label (e.g., Home)" value={newAddress.label} onChange={(e) => setNewAddress(p => ({ ...p, label: e.target.value }))} className="input-premium" />
+                  <input placeholder="Address Line 1" value={newAddress.addressLine1} onChange={(e) => setNewAddress(p => ({ ...p, addressLine1: e.target.value }))} className="input-premium" />
+                  <input placeholder="City" value={newAddress.city} onChange={(e) => setNewAddress(p => ({ ...p, city: e.target.value }))} className="input-premium" />
+                  <input placeholder="Postal Code" value={newAddress.postalCode} onChange={(e) => setNewAddress(p => ({ ...p, postalCode: e.target.value }))} className="input-premium" />
+                </div>
+                <textarea placeholder="Delivery Instructions (optional)" value={newAddress.instructions} onChange={(e) => setNewAddress(p => ({ ...p, instructions: e.target.value }))} className="input-premium resize-none" rows={2} />
+                <button onClick={handleSaveNewAddress} className="btn-primary w-full text-sm py-2.5">Add Address</button>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {addresses.map((addr) => (
+                <div key={addr.id} className="card-premium !shadow-none border border-gray-100 p-4 sm:p-5 hover:border-[#F47A20]/30 transition-colors">
+                  {editingAddressId === addr.id && editingAddress ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input value={editingAddress.label} onChange={(e) => setEditingAddress(p => ({ ...p, label: e.target.value }))} className="input-premium" placeholder="Label" />
+                        <input value={editingAddress.addressLine1} onChange={(e) => setEditingAddress(p => ({ ...p, addressLine1: e.target.value }))} className="input-premium" placeholder="Address" />
+                        <input value={editingAddress.city} onChange={(e) => setEditingAddress(p => ({ ...p, city: e.target.value }))} className="input-premium" placeholder="City" />
+                        <input value={editingAddress.postalCode} onChange={(e) => setEditingAddress(p => ({ ...p, postalCode: e.target.value }))} className="input-premium" placeholder="Postal Code" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleSaveEditedAddress(addr.id)} className="btn-primary text-xs py-2 px-4">Save</button>
+                        <button onClick={handleCancelEdit} className="btn-secondary text-xs py-2 px-4">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-[#F47A20]/10 flex items-center justify-center flex-shrink-0 mt-0.5"><FaMapMarkerAlt className="text-[#F47A20]" /></div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-[#2B1D17]">{addr.label}</span>
+                            {addr.isDefault && <span className="bg-[#F47A20]/10 text-[#F47A20] text-[10px] px-2 py-0.5 rounded-full font-medium">Default</span>}
+                          </div>
+                          <p className="text-[#2B1D17]/50 text-sm mt-0.5 break-words">{addr.address}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {!addr.isDefault && <button onClick={() => handleSetDefaultAddress(addr.id)} className="text-xs text-[#F47A20] hover:underline font-medium whitespace-nowrap">Set Default</button>}
+                        <button onClick={() => handleEditClick(addr)} className="text-xs text-[#2B1D17]/50 hover:text-[#F47A20] px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">Edit</button>
+                        <button onClick={() => handleDeleteAddress(addr.id)} className="text-[#2B1D17]/20 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors"><FaTrash size={14} /></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Order History Tab */}
+        {activeTab === 'orders' && (
+          <div className="card-premium p-6 sm:p-8 animate-fade-in-up">
+            <h2 className="font-serif text-2xl font-bold text-[#2B1D17] flex items-center gap-2 mb-6"><FaHistory className="text-[#F47A20]" /> Order History ({orderHistory.length})</h2>
+            {ordersLoading ? (
+              <div className="text-center py-12"><div className="w-10 h-10 mx-auto rounded-full border-2 border-[#F47A20] border-b-transparent animate-spin" /><p className="text-[#2B1D17]/40 mt-4">Loading orders...</p></div>
+            ) : isLoggedIn ? (
+              orderHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {orderHistory.map((order) => (
+                    <div key={order.orderId || order._id} className="card-premium !shadow-none border border-gray-100 p-4 sm:p-5 hover:border-[#F47A20]/20 transition-colors">
+                      <div className="flex flex-col sm:flex-row justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <p className="font-serif text-sm font-bold text-[#2B1D17]">{order.orderId}</p>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                              order.status === 'completed' ? 'bg-green-100 text-green-700' : order.status === 'accepted' ? 'bg-blue-100 text-blue-700' : 'bg-[#F47A20]/10 text-[#F47A20]'
+                            }`}>{order.status || 'incoming'}</span>
+                          </div>
+                          <p className="text-[#2B1D17]/50 text-xs mb-2">{new Date(order.createdAt).toLocaleDateString()}</p>
+                          <p className="text-[#2B1D17]/50 text-xs truncate">{(order.items || []).map(i => i.name).join(", ")}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="font-serif text-lg font-bold text-[#2B1D17] whitespace-nowrap">${(order.totalAmount || 0).toFixed(2)}</p>
+                          <button onClick={() => { (order.items || []).forEach(i => addToCart({ menuItemId: i.menuItemId || null, name: i.name, price: i.price, category: i.category || "Menu", spiceLevel: i.spiceLevel, specialInstructions: i.specialInstructions || "" }, i.quantity || 1)); navigate("/user/cart"); }}
+                            className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5">
+                            <FaRedo size={10} /> Reorder
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-[#2B1D17]/50 text-center py-12">No orders yet. Start ordering to see your history!</p>
+            ) : <p className="text-[#2B1D17]/50 text-center py-12">Please log in to view your order history.</p>}
+          </div>
+        )}
+
+        {/* Security Tab */}
+        {activeTab === 'security' && (
+          <div className="card-premium p-6 sm:p-8 animate-fade-in-up">
+            <h2 className="font-serif text-2xl font-bold text-[#2B1D17] flex items-center gap-2 mb-6"><FaLock className="text-[#F47A20]" /> Change Password</h2>
+            {passwordChangeError && <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{passwordChangeError}</div>}
+            {passwordChangeSuccess && <div className="mb-5 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">{passwordChangeSuccess}</div>}
+            <div className="space-y-4 max-w-md">
+              <div className="relative">
+                <label className="block text-sm font-medium text-[#2B1D17] mb-2">Current Password</label>
+                <div className="relative">
+                  <input type={showCurrentPassword ? "text" : "password"} placeholder="Current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="input-premium pr-10" />
+                  <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showCurrentPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2B1D17] mb-2">Verification Method</label>
+                <div className="flex items-center gap-6 mb-3">
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={otpMethodForChange === 'sms'} onChange={() => setOtpMethodForChange('sms')} className="accent-[#F47A20]" /><span className="text-sm">SMS</span></label>
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={otpMethodForChange === 'email'} onChange={() => setOtpMethodForChange('email')} className="accent-[#F47A20]" /><span className="text-sm">Email</span></label>
+                </div>
+                <button type="button" onClick={async () => { setSendingChangeOtp(true); try { await (await import("../../services/api")).authAPI.resendVerification({ email: profile?.email, phone: profile?.phone, otpMethod: otpMethodForChange }); setPasswordChangeSuccess('Verification code sent'); } catch (err) { setPasswordChangeError(err?.response?.data?.message || 'Failed to send'); } finally { setSendingChangeOtp(false); } }}
+                  disabled={sendingChangeOtp} className="btn-secondary w-full text-sm py-2.5">{sendingChangeOtp ? 'Sending...' : 'Send Verification Code'}
+                </button>
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium text-[#2B1D17] mb-2">New Password</label>
+                <PasswordInput value={newPassword} onChange={handleNewPasswordChange} placeholder="New password" errors={passwordErrors} name="password" required />
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium text-[#2B1D17] mb-2">Confirm New Password</label>
+                <div className="relative">
+                  <input type={showConfirmPassword ? "text" : "password"} placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input-premium pr-10" />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+              </div>
+
+              <button onClick={handleChangePassword} disabled={passwordChangeLoading} className="btn-primary w-full py-3">
+                {passwordChangeLoading ? "Updating..." : "Update Password"}
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -19,7 +19,7 @@ import Reports from './Admin-Frontend/Pages/Reports';
 import Settings from './Admin-Frontend/Pages/Settings';
 
 //user-view import
-import UserLayout from './User-Frontend/UserLayout.jsx';
+import GuestLayout from './User-Frontend/GuestLayout.jsx';
 import Intro from './User-Frontend/pages/intro.jsx';
 import Home from './User-Frontend/pages/Home.jsx';
 import Menu from './User-Frontend/pages/Menu.jsx';
@@ -48,14 +48,17 @@ function App() {
         <Router>
           <ScrollToTop />
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Public: landing redirect */}
+            <Route path="/" element={<Navigate to="/user/home" replace />} />
+
+            {/* Public: auth pages */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/adminregister" element={<AdminRegister />} />
 
-            {/* Admin Routes - Protected */}
+            {/* Admin Routes - Protected (admin only) */}
             <Route path="/admin" element={
               <ProtectedRoute requireAdmin={true}>
                 <AdminLayout />
@@ -72,27 +75,34 @@ function App() {
               <Route path="settings" element={<Settings />} />
             </Route>
 
-            {/* User Routes - Protected */}
-            <Route path="/user" element={
-              <ProtectedRoute requireUser={true}>
-                <UserLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Intro />} />
-              <Route path="intro" element={<Intro />} />
-              <Route path="home" element={<Home />} />
-              <Route path="menu" element={<Menu />} />
-              <Route path="menu/:category" element={<CategoryPage />} />
-              <Route path="support" element={<Support />} />
-              <Route path="about-us" element={<AboutUs />} />
-              <Route path="contact" element={<Contact />} />
-              <Route path="policies" element={<Policies />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="cart" element={<Cart />} />
-              <Route path="checkout" element={<Checkout />} />
-              <Route path="billing" element={<Billing />} />
-              <Route path="order-confirmation" element={<OrderConfirmation />} />
+            {/* Public: guest browsing routes — open to everyone */}
+            <Route element={<GuestLayout />}>
+              <Route path="/user/intro" element={<Intro />} />
+              <Route path="/user/home" element={<Home />} />
+              <Route path="/user/menu" element={<Menu />} />
+              <Route path="/user/menu/:category" element={<CategoryPage />} />
+              <Route path="/user/support" element={<Support />} />
+              <Route path="/user/about-us" element={<AboutUs />} />
+              <Route path="/user/contact" element={<Contact />} />
+              <Route path="/user/policies" element={<Policies />} />
+              <Route path="/user/cart" element={<Cart />} />
+              <Route path="/user/checkout" element={<Checkout />} />
+              <Route path="/user/billing" element={<Billing />} />
             </Route>
+
+            {/* Protected: account-specific routes — require login */}
+            <Route path="/user/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/user/order-confirmation" element={
+              <ProtectedRoute>
+                <OrderConfirmation />
+              </ProtectedRoute>
+            } />
+
+            <Route path="*" element={<Navigate to="/user/home" replace />} />
           </Routes>
         </Router>
       </CartProvider>

@@ -1,350 +1,266 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { categoryAPI, menuAPI } from "../../services/api";
 import { useCart } from "../context.cart";
+import { useAuth } from "../../contexts/AuthContext";
 import { useSpiceAndSidesFlow } from "../components/SpiceAndSidesFlow";
-import { FaSearch } from 'react-icons/fa';
+import { FaSearch, FaStar, FaFire, FaShoppingCart } from 'react-icons/fa';
 import { resolveImageSrc } from '../../services/image';
 
-const tagColors = {
-  GF: "bg-green-600",
-  LF: "bg-blue-600",
-};
+const spiceColors = { Mild: "bg-green-500", "Mild Medium": "bg-yellow-500", Medium: "bg-orange-500", "Medium Hot": "bg-red-400", Hot: "bg-red-600", "Extra Hot": "bg-red-800" };
+const tagColors = { GF: "bg-green-600", LF: "bg-blue-600" };
 
 const Menu = () => {
   const navigate = useNavigate();
-  const { addToCart } = useCart();
-  const { startFlow, spiceModal, sidesModal } = useSpiceAndSidesFlow(addToCart);
+  const location = useLocation();
+  const { addToCart, cartItems } = useCart();
+  const { isAuthenticated } = useAuth();
+  const loginRedirect = () => navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
+  const { startFlow, spiceModal, sidesModal } = useSpiceAndSidesFlow(addToCart, isAuthenticated(), loginRedirect);
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [itemQuantities, setItemQuantities] = useState({});
+  const [activeCategory, setActiveCategory] = useState("all");
   const searchInputRef = useRef(null);
+
+  const cartCount = cartItems.reduce((t, i) => t + (Number(i.quantity) || 0), 0);
 
   useEffect(() => {
     (async () => {
       try {
         const cats = await categoryAPI.getCategories();
-          if (Array.isArray(cats) && cats.length) {
-          // map to the same shape as static menuCategories where possible
-          const mapped = cats.map((c) => ({
-            name: c.name,
-            image: resolveImageSrc(c.image, '/home.jpg'),
-            desc: c.description || "",
-            slug: c.slug,
-            subCategory: c.subCategory || "",
-            _id: c._id,
-          }));
-          setCategories(mapped);
+        if (Array.isArray(cats) && cats.length) {
+          setCategories(cats.map((c) => ({
+            name: c.name, image: resolveImageSrc(c.image, '/home.jpg'),
+            desc: c.description || "", slug: c.slug, subCategory: c.subCategory || "", _id: c._id,
+          })));
         }
-      } catch (err) {
-        console.warn("Failed to load categories from server", err);
-      }
+      } catch (err) { console.warn("Failed to load categories", err); }
     })();
   }, []);
 
-  // Handle search
   useEffect(() => {
     const performSearch = async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults(null);
-        setIsSearching(false);
-        return;
-      }
-
+      if (!searchQuery.trim()) { setSearchResults(null); setIsSearching(false); return; }
       setIsSearching(true);
-      try {
-        const results = await menuAPI.searchMenu(searchQuery);
-        setSearchResults(results);
-      } catch (err) {
-        console.warn("Search failed", err);
-        setSearchResults({ categories: [], items: [] });
-      } finally {
-        setIsSearching(false);
-      }
+      try { const results = await menuAPI.searchMenu(searchQuery); setSearchResults(results); }
+      catch (err) { setSearchResults({ categories: [], items: [] }); }
+      finally { setIsSearching(false); }
     };
-
-    const debounceTimer = setTimeout(performSearch, 300); // Debounce search
+    const debounceTimer = setTimeout(performSearch, 300);
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-    setSearchResults(null);
-  };
-
-  // Handle quantity changes for items
   const handleQuantityChange = (itemId, delta) => {
-    setItemQuantities((prev) => ({
-      ...prev,
-      [itemId]: Math.max(1, (prev[itemId] || 1) + delta),
-    }));
+    setItemQuantities((prev) => ({ ...prev, [itemId]: Math.max(1, (prev[itemId] || 1) + delta) }));
   };
 
-  // Determine what to display
-  const displayCategories = searchResults
-    ? searchResults.categories
-    : categories;
-  // Filter items to show only "Available" status
-  const displayItems = searchResults
-    ? searchResults.items.filter((item) => item.status === "Available")
-    : [];
-
-  // Helper to get item image using shared resolver
-  const getItemImage = (item) => {
-    return resolveImageSrc(item?.image, '/home.jpg');
-  };
+  const displayCategories = searchResults ? (searchResults.categories || []) : categories;
+  const displayItems = searchResults ? (searchResults.items || []).filter(i => i.status === "Available") : [];
+  const getItemImage = (item) => resolveImageSrc(item?.image, '/home.jpg');
+  const filteredCategories = activeCategory === "all" ? categories : categories.filter(c => (c.slug || c.name) === activeCategory);
 
   return (
-    <div className="min-h-screen bg-[#FF6A00] flex flex-col">
-      <main className="flex-1 py-6 sm:py-8 md:py-12 px-4">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white mb-2">
-          Explore Our Menu
-        </h1>
-        <p className="text-center text-white text-sm sm:text-base md:text-lg mb-6 sm:mb-8 md:mb-10 px-2">
-          Select a category to discover our delicious offerings
-        </p>
+    <div className="min-h-screen bg-[#FFF8F1] flex flex-col">
+      {/* Hero */}
+      <section className="relative bg-[#2B1D17] pt-32 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+          <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Discover</span>
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-white mt-3 mb-4">
+            Explore Our <span className="text-[#F47A20]">Menu</span>
+          </h1>
+          <p className="text-white/60 text-lg max-w-xl mx-auto">
+            Select a category or search to discover our delicious offerings
+          </p>
 
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mb-8 relative">
-          <button
-            type="button"
-            onClick={() => searchInputRef.current?.focus()}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            aria-label="Focus search input"
-          >
-            <FaSearch />
-          </button>
-          <input
-            type="text"
-            placeholder="Search categories or items..."
-            ref={searchInputRef}
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/90 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFB366] text-lg"
-          />
-          {searchQuery && (
-            <button
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-          )}
-          {isSearching && (
-            <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#FF6A00]"></div>
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto mt-8 relative">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text" placeholder="Search dishes, categories..." ref={searchInputRef}
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-12 py-4 bg-white rounded-2xl text-[#2B1D17] placeholder:text-gray-400 text-lg focus:outline-none focus:ring-4 focus:ring-[#F47A20]/20 shadow-card transition-all"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            )}
+            {isSearching && (
+              <div className="absolute right-14 top-1/2 -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#F47A20]" />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Category Tabs */}
+      {!searchQuery && (
+        <div className="sticky top-[72px] z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex gap-2 overflow-x-auto py-4 scrollbar-hide -mx-2 px-2">
+              <button
+                onClick={() => setActiveCategory("all")}
+                className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                  activeCategory === "all"
+                    ? "bg-[#F47A20] text-white shadow-lg shadow-[#F47A20]/20"
+                    : "bg-gray-100 text-[#2B1D17]/70 hover:bg-gray-200"
+                }`}
+              >
+                All
+              </button>
+              {categories.map((cat) => (
+                <button key={cat._id || cat.name}
+                  onClick={() => setActiveCategory(cat.slug || cat.name)}
+                  className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    activeCategory === (cat.slug || cat.name)
+                      ? "bg-[#F47A20] text-white shadow-lg shadow-[#F47A20]/20"
+                      : "bg-gray-100 text-[#2B1D17]/70 hover:bg-gray-200"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Search Results */}
+          {searchResults && searchQuery.trim() ? (
+            <div className="space-y-12">
+              {displayCategories.length > 0 && (
+                <div>
+                  <h2 className="font-serif text-2xl font-bold text-[#2B1D17] mb-6">Categories</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {displayCategories.map((cat) => (
+                      <div key={cat._id || cat.name} onClick={() => navigate(`/user/menu/${encodeURIComponent(cat.slug || cat.name)}`)}
+                        className="card-premium overflow-hidden cursor-pointer group">
+                        <div className="h-40 overflow-hidden">
+                          <img src={cat.image || "/home.jpg"} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-serif font-bold text-[#2B1D17]">{cat.name}</h3>
+                          {cat.subCategory && (
+                            <span className="text-xs text-[#2B1D17]/50 mt-1">{cat.subCategory}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {displayItems.length > 0 && (
+                <div>
+                  <h2 className="font-serif text-2xl font-bold text-[#2B1D17] mb-6">Dishes</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {displayItems.map((item) => (
+                      <DishCard key={item._id} item={item} itemQuantities={itemQuantities}
+                        handleQuantityChange={handleQuantityChange} startFlow={startFlow}
+                        getItemImage={getItemImage} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {displayCategories.length === 0 && displayItems.length === 0 && !isSearching && (
+                <p className="text-center text-[#2B1D17]/60 py-12">No results found for "{searchQuery}"</p>
+              )}
+            </div>
+          ) : (
+            /* Categories Grid */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredCategories.map((cat) => (
+                <div key={cat._id || cat.name} onClick={() => navigate(`/user/menu/${encodeURIComponent(cat.slug || cat.name)}`)}
+                  className="card-premium overflow-hidden cursor-pointer group">
+                  <div className="relative h-52 overflow-hidden">
+                    <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="font-serif text-xl font-bold text-white">{cat.name}</h3>
+                      {cat.subCategory && (
+                        <div className="flex gap-1 mt-1.5">
+                          {cat.subCategory.split(",").map((tag) => tag.trim()).filter((t) => tagColors[t]).map((t) => (
+                            <span key={t} className={`text-[10px] text-white px-2 py-0.5 rounded-full font-semibold ${tagColors[t]}`}>{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    {cat.desc && <p className="text-[#2B1D17]/60 text-sm line-clamp-2">{cat.desc}</p>}
+                    <button className="btn-secondary w-full mt-4 text-sm py-2.5">Explore Menu</button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-
-        {/* Display Results */}
-        {searchResults && searchQuery.trim() ? (
-          <div>
-            {/* Categories */}
-            {displayCategories.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-white mb-4">
-                  Categories
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6 max-w-7xl mx-auto">
-                  {displayCategories.map((cat) => (
-                    <div
-                      key={cat._id || cat.name}
-                      className="bg-black bg-opacity-70 rounded-2xl p-4 sm:p-6 md:p-8 w-full mx-auto flex flex-col items-center justify-between cursor-pointer transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg"
-                      onClick={() =>
-                        navigate(
-                          `/user/menu/${encodeURIComponent(
-                            cat.slug || cat.name
-                          )}`
-                        )
-                      }
-                    >
-                      <img
-                        src={cat.image || "/home.jpg"}
-                        alt={cat.name}
-                        className="rounded-2xl mb-3 sm:mb-4 object-cover w-full h-40 sm:h-48 md:h-56"
-                      />
-                      <div className="w-full">
-                        <h3 className="font-bold text-xl sm:text-2xl mb-2 text-white text-center">
-                          {cat.name}
-                        </h3>
-                        {cat.subCategory && (
-                          <div className="flex gap-1 mb-2 justify-center">
-                            {cat.subCategory
-                              .split(",")
-                              .map((tag) => tag.trim())
-                              .filter((tag) => tagColors[tag])
-                              .map((tag) => (
-                                <span
-                                  key={tag}
-                                  className={`text-xs text-white px-2 py-1 rounded font-medium ${tagColors[tag]}`}
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                      {cat.description && (
-                        <p className="text-sm sm:text-base mb-3 sm:mb-4 text-white/80 font-normal text-center">
-                          {cat.description}
-                        </p>
-                      )}
-                      <div className="flex-1 flex flex-col justify-end w-full">
-                        <button className="mx-auto w-full sm:w-3/4 block bg-[#4B0B0B] text-white text-base sm:text-lg px-4 sm:px-6 py-2 rounded hover:bg-[#FFB366] hover:text-black transition-all">
-                          View Category
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Items */}
-            {displayItems.length > 0 && (
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Items</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-                  {displayItems.map((item) => (
-                    <div
-                      key={item._id}
-                      className="bg-black bg-opacity-70 rounded-2xl p-8 w-full max-w-[480px] min-h-[520px] mx-auto flex flex-col items-center justify-between cursor-pointer transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg"
-                      onClick={() =>
-                        navigate(
-                          `/user/menu/${encodeURIComponent(item.category)}`
-                        )
-                      }
-                    >
-                      <img
-                        src={getItemImage(item)}
-                        alt={item.name}
-                        className="rounded-2xl mb-4 object-contain w-full h-56"
-                      />
-                      <h3 className="font-bold text-2xl mb-2 text-white text-center">
-                        {item.name}
-                      </h3>
-                      <span className="text-[#FFB366] font-bold text-lg mb-2">
-                        ${item.price.toFixed(2)}
-                      </span>
-                      {item.description && (
-                        <p className="text-base mb-4 text-white/80 font-normal text-center">
-                          {item.description}
-                        </p>
-                      )}
-                      <div className="flex-1 flex flex-col justify-end w-full">
-                        {/* Quantity Selector */}
-                        <div className="flex items-center justify-center mb-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleQuantityChange(item._id, -1);
-                            }}
-                            className="bg-[#4B0B0B] text-white font-bold px-3 py-1 rounded-l hover:bg-[#FFB366] hover:text-black transition-all"
-                          >
-                            -
-                          </button>
-                          <span className="text-white px-4 py-1 font-bold">
-                            {itemQuantities[item._id] || 1}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleQuantityChange(item._id, 1);
-                            }}
-                            className="bg-[#4B0B0B] text-white font-bold px-3 py-1 rounded-r hover:bg-[#FFB366] hover:text-black transition-all"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startFlow(item, itemQuantities[item._id] || 1);
-                          }}
-                          className="mx-auto w-3/4 block bg-[#4B0B0B] text-white text-lg px-6 py-2 rounded hover:bg-[#FFB366] hover:text-black transition-all"
-                        >
-                          Add to Cart
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {displayCategories.length === 0 &&
-              displayItems.length === 0 &&
-              !isSearching && (
-                <p className="text-center text-white text-lg">
-                  No results found for "{searchQuery}"
-                </p>
-              )}
-          </div>
-        ) : (
-          /* Default Categories View */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6 max-w-7xl mx-auto">
-            {categories.map((cat) => (
-              <div
-                key={cat.name}
-                className="bg-black bg-opacity-70 rounded-2xl p-4 sm:p-6 md:p-8 w-full mx-auto flex flex-col items-center justify-between cursor-pointer transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg"
-                onClick={() =>
-                  navigate(
-                    `/user/menu/${encodeURIComponent(cat.slug || cat.name)}`
-                  )
-                }
-              >
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="rounded-2xl mb-3 sm:mb-4 object-cover w-full h-40 sm:h-48 md:h-56"
-                />
-                <div className="w-full">
-                  <h3 className="font-bold text-xl sm:text-2xl mb-2 text-white text-center">
-                    {cat.name}
-                  </h3>
-                  {cat.subCategory && (
-                    <div className="flex gap-1 mb-2 justify-center">
-                      {cat.subCategory
-                        .split(",")
-                        .map((tag) => tag.trim())
-                        .filter((tag) => tagColors[tag])
-                        .map((tag) => (
-                          <span
-                            key={tag}
-                            className={`text-xs text-white px-2 py-1 rounded font-medium ${tagColors[tag]}`}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                    </div>
-                  )}
-                </div>
-                {cat.desc && (
-                  <p className="text-sm sm:text-base mb-3 sm:mb-4 text-white/80 font-normal text-center">
-                    {cat.desc}
-                  </p>
-                )}
-                <div className="flex-1 flex flex-col justify-end w-full">
-                  <button className="mx-auto w-full sm:w-3/4 block bg-[#4B0B0B] text-white text-base sm:text-lg px-4 sm:px-6 py-2 rounded hover:bg-[#FFB366] hover:text-black transition-all">
-                    Explore Menu
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {spiceModal}
-        {sidesModal}
       </main>
+
+      {/* Floating Mobile Cart */}
+      {cartCount > 0 && (
+        <div className="fixed bottom-6 left-4 right-4 z-50 lg:hidden">
+          <button onClick={() => navigate('/user/cart')}
+            className="w-full bg-[#F47A20] text-white rounded-2xl py-4 px-6 flex items-center justify-between shadow-2xl shadow-[#F47A20]/30">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <FaShoppingCart className="text-xl" />
+                <span className="absolute -top-2 -right-2 bg-white text-[#F47A20] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{cartCount}</span>
+              </div>
+              <span className="font-semibold">View Cart</span>
+            </div>
+            <span className="font-bold">${cartItems.reduce((t, i) => t + i.price * i.quantity, 0).toFixed(2)}</span>
+          </button>
+        </div>
+      )}
+
+      {spiceModal}{sidesModal}
     </div>
   );
 };
+
+/* Dish Card Component */
+function DishCard({ item, itemQuantities, handleQuantityChange, startFlow, getItemImage }) {
+  return (
+    <div className="card-premium overflow-hidden group">
+      <div className="relative h-52 overflow-hidden">
+        <img src={getItemImage(item)} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+        <div className="absolute top-3 left-3 flex gap-1.5">
+          {item.subCategory && item.subCategory.split(",").map((tag) => tag.trim()).filter((t) => tagColors[t]).map((t) => (
+            <span key={t} className={`text-[10px] text-white px-2 py-0.5 rounded-full font-semibold ${tagColors[t]}`}>{t}</span>
+          ))}
+        </div>
+        <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 text-sm font-bold text-[#2B1D17] shadow-lg">
+          ${item.price.toFixed(2)}
+        </div>
+      </div>
+      <div className="p-5">
+        <h3 className="font-serif text-lg font-bold text-[#2B1D17] mb-1">{item.name}</h3>
+        {item.description && (
+          <p className="text-[#2B1D17]/50 text-sm line-clamp-2 mb-4">{item.description}</p>
+        )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center bg-gray-100 rounded-full overflow-hidden">
+            <button onClick={(e) => { e.stopPropagation(); handleQuantityChange(item._id, -1); }}
+              className="w-9 h-9 flex items-center justify-center text-[#2B1D17] hover:bg-gray-200 transition-colors font-medium">−</button>
+            <span className="px-3 font-semibold text-[#2B1D17] text-sm">{itemQuantities[item._id] || 1}</span>
+            <button onClick={(e) => { e.stopPropagation(); handleQuantityChange(item._id, 1); }}
+              className="w-9 h-9 flex items-center justify-center text-[#2B1D17] hover:bg-gray-200 transition-colors font-medium">+</button>
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); startFlow(item, itemQuantities[item._id] || 1); }}
+            className="btn-primary text-xs py-2.5 px-4 flex-shrink-0">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default Menu;

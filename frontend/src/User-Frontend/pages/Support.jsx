@@ -1,95 +1,37 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { branchAPI } from '../../services/api';
-import {
-  MdPhone,
-  MdEmail,
-  MdLocationOn,
-  MdChat,
-  MdSend,
-  MdCheckCircle,
-  MdHelp,
-  MdRestaurant,
-  MdCreditCard,
-  MdLocalShipping,
-  MdExpandMore,
-  MdExpandLess,
-} from "react-icons/md";
+import { MdPhone, MdEmail, MdLocationOn, MdChat, MdSend, MdCheckCircle, MdHelp, MdRestaurant, MdCreditCard, MdLocalShipping, MdExpandMore, MdExpandLess } from "react-icons/md";
 
 const faqCategories = [
   {
-    icon: MdRestaurant,
-    title: "Menu & Orders",
+    icon: MdRestaurant, title: "Menu & Orders",
     questions: [
-      {
-        question: "How do I modify my order after placing it?",
-        answer:
-          "You can modify your order within 5 minutes of placing it by calling our support line or using live chat.",
-      },
-      {
-        question: "Do you have vegetarian and vegan options?",
-        answer:
-          "Yes! We have a wide variety of vegetarian and vegan dishes clearly marked on our menu with dietary badges.",
-      },
-      {
-        question: "Can I customize the spice level of my dishes?",
-        answer:
-          "You can request mild, medium, or spicy when placing your order. Just add a note in the special instructions.",
-      },
+      { question: "How do I modify my order after placing it?", answer: "You can modify your order within 5 minutes of placing it by calling our support line or using live chat." },
+      { question: "Do you have vegetarian and vegan options?", answer: "Yes! We have a wide variety of vegetarian and vegan dishes clearly marked on our menu with dietary badges." },
+      { question: "Can I customize the spice level of my dishes?", answer: "You can request mild, medium, or spicy when placing your order. Just add a note in the special instructions." },
     ],
   },
   {
-    icon: MdLocalShipping,
-    title: "Delivery & Pickup",
+    icon: MdLocalShipping, title: "Delivery & Pickup",
     questions: [
-      {
-        question: "What are your delivery hours?",
-        answer:
-          "We deliver Monday through Sunday from 11AM to 11PM. Orders placed after 10:30PM will be delivered the next day.",
-      },
-      {
-        question: "How much is delivery?",
-        answer: "Delivery is always free!",
-      },
-      {
-        question: "How long does delivery take?",
-        answer:
-          "Most deliveries arrive within 25-35 minutes. During peak hours, it may take up to 45 minutes.",
-      },
+      { question: "What are your delivery hours?", answer: "We deliver Monday through Sunday from 11AM to 11PM." },
+      { question: "How much is delivery?", answer: "Delivery is always free!" },
+      { question: "How long does delivery take?", answer: "Most deliveries arrive within 25-35 minutes. During peak hours, it may take up to 45 minutes." },
     ],
   },
   {
-    icon: MdCreditCard,
-    title: "Payment & Loyalty",
+    icon: MdCreditCard, title: "Payment & Loyalty",
     questions: [
-      {
-        question: "What payment methods do you accept?",
-        answer:
-          "We accept all major credit cards, debit cards, digital wallets (Apple Pay, Google Pay), and cash on delivery.",
-      },
-      {
-        question: "How do loyalty points work?",
-        answer:
-          "Earn 1 point for every $1 spent. 100 points = $1 discount. Points never expire and can be used on any order.",
-      },
-      {
-        question: "Can I get a refund if I'm not satisfied?",
-        answer:
-          "Yes! If you're not completely satisfied with your order, contact us within 2 hours and we'll make it right.",
-      },
+      { question: "What payment methods do you accept?", answer: "We accept all major credit cards, debit cards, digital wallets, and cash on delivery." },
+      { question: "How do loyalty points work?", answer: "Earn 1 point for every $1 spent. 100 points = $1 discount. Points never expire." },
+      { question: "Can I get a refund if I'm not satisfied?", answer: "Yes! Contact us within 2 hours and we'll make it right." },
     ],
   },
 ];
 
 export default function SupportPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    category: "",
-    subject: "",
-    message: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", category: "", subject: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState(null);
@@ -98,352 +40,126 @@ export default function SupportPage() {
   const [branchesLoading, setBranchesLoading] = useState(true);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    // Simulate form submission
+    e.preventDefault(); setIsSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        category: "",
-        subject: "",
-        message: "",
-      });
-    }, 3000);
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    setIsSubmitting(false); setIsSubmitted(true);
+    setTimeout(() => { setIsSubmitted(false); setFormData({ name: "", email: "", phone: "", category: "", subject: "", message: "" }); }, 3000);
   };
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try {
-        const data = await branchAPI.getBranches();
-        if (!mounted) return;
-        // api wrapper returns response.data already; ensure array
-        setBranches(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.warn('Failed to load branches for Visit Us', err?.response?.data || err.message || err);
-        if (mounted) setBranches([]);
-      } finally {
-        if (mounted) setBranchesLoading(false);
-      }
+      try { const data = await branchAPI.getBranches(); if (mounted) setBranches(Array.isArray(data) ? data : []); }
+      catch (err) { if (mounted) setBranches([]); }
+      finally { if (mounted) setBranchesLoading(false); }
     })();
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FF6A00] flex flex-col">
-      {/* Hero Section */}
-      <section className="py-16 bg-[#4B0B0B] text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
-            Support Center
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
-            We're here to help! Get answers to your questions or reach out to
-            our friendly support team.
-          </p>
+    <div className="min-h-screen bg-[#FFF8F1]">
+      <section className="relative bg-[#2B1D17] pt-32 pb-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Help Center</span>
+          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">Support Center</h1>
+          <p className="text-white/70 text-lg max-w-2xl mx-auto">We're here to help! Get answers or reach out to our friendly support team.</p>
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Contact Methods */}
-          <div className="lg:col-span-2 space-y-8">
+          {/* Left: FAQ */}
+          <div className="lg:col-span-2 space-y-6">
             <div>
-              <h2 className="text-3xl font-bold mb-6">Get in Touch</h2>
+              <h2 className="font-serif text-3xl font-bold text-[#2B1D17] mb-6">Get in Touch</h2>
             </div>
 
-            {/* Visit Us Dropdown */}
-            <div className="bg-[#3B2410] rounded-lg shadow-md border border-[#4B0B0B]">
-              <button
-                className="w-full p-6 border-b border-[#4B0B0B] text-left flex items-center justify-between hover:bg-[#4B0B0B] transition-colors duration-200"
-                onClick={() => setIsVisitUsExpanded(!isVisitUsExpanded)}
-              >
-                <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-                  <MdLocationOn className="h-5 w-5 text-[#FF6A00]" />
-                  Visit Us
-                </h3>
-                {isVisitUsExpanded ? (
-                  <MdExpandLess className="h-5 w-5 text-[#FF6A00]" />
-                ) : (
-                  <MdExpandMore className="h-5 w-5 text-[#FF6A00]" />
-                )}
+            {/* Visit Us */}
+            <div className="card-premium !p-0 overflow-hidden">
+              <button className="w-full p-6 text-left flex items-center justify-between hover:bg-[#FFF5EB] transition-colors"
+                onClick={() => setIsVisitUsExpanded(!isVisitUsExpanded)}>
+                <h3 className="flex items-center gap-3 text-lg font-semibold text-[#2B1D17]"><MdLocationOn className="text-[#F47A20] text-xl" /> Visit Us</h3>
+                {isVisitUsExpanded ? <MdExpandLess className="text-[#F47A20] text-xl" /> : <MdExpandMore className="text-[#F47A20] text-xl" />}
               </button>
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  isVisitUsExpanded ? "opacity-100" : "max-h-0 opacity-0"
-                }`}
-              >
-                <div className="p-6 space-y-2">
-                  {branchesLoading ? (
-                    <div className="text-sm text-[#FFB366]">Loading locations...</div>
-                  ) : branches.length === 0 ? (
-                    <div className="text-sm text-[#FFB366]">No locations available.</div>
-                  ) : (
-                    branches.map((b) => (
-                      <Link
-                        key={b._id}
-                        to={`/user/contact?branchId=${encodeURIComponent(b._id)}`}
-                        className="block py-2 px-3 text-[#FFB366] hover:text-white hover:bg-[#4B0B0B] rounded-md transition-colors duration-200"
-                      >
-                        {b.city || b.name}
-                      </Link>
-                    ))
-                  )}
+              <div className={`overflow-hidden transition-all duration-300 ${isVisitUsExpanded ? "max-h-96" : "max-h-0"}`}>
+                <div className="p-6 border-t border-gray-100 space-y-1">
+                  {branchesLoading ? <p className="text-sm text-[#2B1D17]/40">Loading...</p>
+                  : branches.length === 0 ? <p className="text-sm text-[#2B1D17]/40">No locations available.</p>
+                  : branches.map((b) => (
+                    <Link key={b._id} to={`/user/contact?branchId=${encodeURIComponent(b._id)}`}
+                      className="block py-2.5 px-4 text-[#F47A20] hover:bg-[#FFF5EB] rounded-xl transition-colors font-medium text-sm">
+                      {b.city || b.name} → {b.addressLine}
+                    </Link>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* FAQ Section */}
-            <div>
-              <h2 className="text-3xl font-bold mb-6">
-                Frequently Asked Questions
-              </h2>
-              <div className="space-y-6">
-                {faqCategories.map((category) => (
-                  <div
-                    key={category.title}
-                    className="bg-[#3B2410] rounded-lg shadow-md border border-[#4B0B0B]"
-                  >
-                    <div className="p-6 border-b border-[#4B0B0B]">
-                      <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-                        <category.icon className="h-5 w-5 text-[#FF6A00]" />
-                        {category.title}
-                      </h3>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      {category.questions.map((faq, index) => (
-                        <div
-                          key={index}
-                          className="border-b border-[#4B0B0B] last:border-b-0 pb-4 last:pb-0"
-                        >
-                          <button
-                            className="flex items-center justify-between w-full text-left py-2 hover:text-[#FF6A00] transition-colors text-white"
-                            onClick={() =>
-                              setExpandedFaq(
-                                expandedFaq === `${category.title}-${index}`
-                                  ? null
-                                  : `${category.title}-${index}`
-                              )
-                            }
-                          >
-                            <span className="font-medium text-white">
-                              {faq.question}
-                            </span>
-                            <MdHelp className="h-4 w-4 text-[#FFB366] flex-shrink-0 ml-2" />
-                          </button>
-                          {expandedFaq === `${category.title}-${index}` && (
-                            <div className="mt-2 text-[#FFB366] animate-slide-up">
-                              <p className="text-[#FFB366]">{faq.answer}</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+            {/* FAQ */}
+            <h2 className="font-serif text-3xl font-bold text-[#2B1D17] mb-6 mt-10">Frequently Asked Questions</h2>
+            <div className="space-y-4">
+              {faqCategories.map((category) => (
+                <div key={category.title} className="card-premium !p-0 overflow-hidden">
+                  <div className="p-6 bg-[#FFF5EB] flex items-center gap-3">
+                    <category.icon className="text-[#F47A20] text-xl" />
+                    <h3 className="font-serif text-lg font-bold text-[#2B1D17]">{category.title}</h3>
                   </div>
-                ))}
-              </div>
+                  <div className="p-6 space-y-3">
+                    {category.questions.map((faq, index) => (
+                      <div key={index} className="border-b border-gray-100 last:border-0 pb-3 last:pb-0">
+                        <button className="flex items-center justify-between w-full text-left py-2 hover:text-[#F47A20] transition-colors group"
+                          onClick={() => setExpandedFaq(expandedFaq === `${category.title}-${index}` ? null : `${category.title}-${index}`)}>
+                          <span className="font-medium text-[#2B1D17] text-sm group-hover:text-[#F47A20]">{faq.question}</span>
+                          <MdHelp className="text-[#D9A441] flex-shrink-0 ml-3" />
+                        </button>
+                        {expandedFaq === `${category.title}-${index}` && (
+                          <div className="mt-3 text-[#2B1D17]/60 text-sm animate-slide-up bg-[#FFF5EB] rounded-xl p-4">{faq.answer}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Contact Form */}
-          <div>
-            <div className="bg-[#3B2410] rounded-lg shadow-md sticky top-8 border border-[#4B0B0B]">
-              <div className="p-6 border-b border-[#4B0B0B]">
-                <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-                  <MdChat className="h-5 w-5 text-[#FF6A00]" />
-                  Send us a Message
-                </h3>
+          {/* Right: Form */}
+          <div className="lg:col-span-1">
+            <div className="card-premium p-6 sticky top-24">
+              <div className="flex items-center gap-3 mb-6 pb-5 border-b border-gray-100">
+                <MdChat className="text-[#F47A20] text-xl" />
+                <h3 className="font-serif text-lg font-bold text-[#2B1D17]">Send us a Message</h3>
               </div>
-              <div className="p-6">
-                {isSubmitted ? (
-                  <div className="text-center py-8 animate-fade-in">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <MdCheckCircle className="h-8 w-8 text-green-600" />
-                    </div>
-                    <h3 className="font-semibold text-lg mb-2">
-                      Message Sent!
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      Thank you for contacting us. We'll get back to you within
-                      24 hours.
-                    </p>
+              {isSubmitted ? (
+                <div className="text-center py-8 animate-fade-in">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MdCheckCircle className="text-3xl text-green-600" />
                   </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="name"
-                        className="block text-sm font-medium text-white"
-                      >
-                        Full Name
-                      </label>
-                      <input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          handleInputChange("name", e.target.value)
-                        }
-                        required
-                        className="w-full px-3 py-2 border border-[#FF6A00] bg-[#2a1810] text-white rounded-md focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all duration-200 placeholder-[#FFB366]"
-                        placeholder="Enter your name"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-white"
-                      >
-                        Email Address
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          handleInputChange("email", e.target.value)
-                        }
-                        required
-                        className="w-full px-3 py-2 border border-[#FF6A00] bg-[#2a1810] text-white rounded-md focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all duration-200 placeholder-[#FFB366]"
-                        placeholder="Enter your email"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="phone"
-                        className="block text-sm font-medium text-white"
-                      >
-                        Phone Number (Optional)
-                      </label>
-                      <input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          handleInputChange("phone", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-[#FF6A00] bg-[#2a1810] text-white rounded-md focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all duration-200 placeholder-[#FFB366]"
-                        placeholder="Enter your phone number"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="category"
-                        className="block text-sm font-medium text-white"
-                      >
-                        Category
-                      </label>
-                      <select
-                        id="category"
-                        value={formData.category}
-                        onChange={(e) =>
-                          handleInputChange("category", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-[#FF6A00] bg-[#2a1810] text-white rounded-md focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all duration-200"
-                      >
-                        <option value="" className="text-[#FFB366]">
-                          Select a category
-                        </option>
-                        <option value="order" className="text-black">
-                          Order Issue
-                        </option>
-                        <option value="delivery" className="text-black">
-                          Delivery Problem
-                        </option>
-                        <option value="payment" className="text-black">
-                          Payment Question
-                        </option>
-                        <option value="menu" className="text-black">
-                          Menu Inquiry
-                        </option>
-                        <option value="feedback" className="text-black">
-                          Feedback
-                        </option>
-                        <option value="other" className="text-black">
-                          Other
-                        </option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="subject"
-                        className="block text-sm font-medium text-white"
-                      >
-                        Subject
-                      </label>
-                      <input
-                        id="subject"
-                        value={formData.subject}
-                        onChange={(e) =>
-                          handleInputChange("subject", e.target.value)
-                        }
-                        required
-                        className="w-full px-3 py-2 border border-[#FF6A00] bg-[#2a1810] text-white rounded-md focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all duration-200 placeholder-[#FFB366]"
-                        placeholder="Enter subject"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="message"
-                        className="block text-sm font-medium text-white"
-                      >
-                        Message
-                      </label>
-                      <textarea
-                        id="message"
-                        value={formData.message}
-                        onChange={(e) =>
-                          handleInputChange("message", e.target.value)
-                        }
-                        required
-                        rows={4}
-                        className="w-full px-3 py-2 border border-[#FF6A00] bg-[#2a1810] text-white rounded-md focus:ring-2 focus:ring-[#FF6A00]/20 focus:border-[#FF6A00] transition-all duration-200 placeholder-[#FFB366]"
-                        placeholder="Please describe your question or concern in detail..."
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-[#4B0B0B] hover:bg-[#FF6A00] text-[#FFB366] hover:text-white py-2 px-4 rounded-md transition-colors duration-200 flex items-center justify-center gap-2 font-semibold border border-[#FF6A00]"
-                    >
-                      {isSubmitting ? (
-                        "Sending..."
-                      ) : (
-                        <>
-                          <MdSend className="h-4 w-4" />
-                          Send Message
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-xs text-[#FFB366] text-center">
-                      We typically respond within 24 hours during business days.
-                    </p>
-                  </form>
-                )}
-              </div>
+                  <h3 className="font-serif text-lg font-bold text-[#2B1D17] mb-2">Message Sent!</h3>
+                  <p className="text-[#2B1D17]/60 text-sm">We'll get back to you within 24 hours.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <input value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} required className="input-premium" placeholder="Full Name" />
+                  <input type="email" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} required className="input-premium" placeholder="Email" />
+                  <input type="tel" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} className="input-premium" placeholder="Phone (Optional)" />
+                  <select value={formData.category} onChange={(e) => setFormData(p => ({ ...p, category: e.target.value }))} className="input-premium">
+                    <option value="">Select category</option>
+                    <option value="order">Order Issue</option>
+                    <option value="delivery">Delivery Problem</option>
+                    <option value="payment">Payment Question</option>
+                    <option value="menu">Menu Inquiry</option>
+                    <option value="feedback">Feedback</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <input value={formData.subject} onChange={(e) => setFormData(p => ({ ...p, subject: e.target.value }))} required className="input-premium" placeholder="Subject" />
+                  <textarea value={formData.message} onChange={(e) => setFormData(p => ({ ...p, message: e.target.value }))} required rows={4} className="input-premium resize-none" placeholder="Describe your question or concern..." />
+                  <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
+                    {isSubmitting ? "Sending..." : <><MdSend /> Send Message</>}
+                  </button>
+                  <p className="text-xs text-center text-[#2B1D17]/30">We typically respond within 24 hours.</p>
+                </form>
+              )}
             </div>
           </div>
         </div>

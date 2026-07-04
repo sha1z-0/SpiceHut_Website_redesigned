@@ -1,32 +1,29 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children, requireAdmin = false, requireUser = false }) => {
-  const { isAuthenticated, isAdmin, isUser, loading } = useAuth();
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
   const location = useLocation();
 
-  // Show loading spinner while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen bg-[#FFF8F1] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-[#F47A20] border-b-transparent animate-spin" />
+          <p className="text-[#2B1D17]/40 text-sm">Loading...</p>
+        </div>
       </div>
     );
   }
 
-  // If not authenticated, redirect to login
   if (!isAuthenticated()) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Preserve current path so we can redirect back after login
+    const returnPath = location.pathname + location.search;
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnPath)}`} replace />;
   }
 
-  // If admin access is required but user is not admin
   if (requireAdmin && !isAdmin()) {
-    return <Navigate to="/user/intro" replace />;
-  }
-
-  // If user access is required but user is not a regular user
-  if (requireUser && !isUser()) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/user/home" replace />;
   }
 
   return children;

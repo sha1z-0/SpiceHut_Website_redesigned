@@ -1,491 +1,146 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  FaCheck,
-  FaShoppingCart,
-  FaHistory,
-  FaStar,
-  FaDownload,
-  FaToggleOn,
-  FaToggleOff,
-} from "react-icons/fa";
+import { FaCheck, FaShoppingCart, FaStar, FaDownload, FaToggleOn, FaToggleOff } from "react-icons/fa";
 import { useCart } from "../context.cart.jsx";
 import { orderAPI, profileAPI } from "../../services/api";
-
-const DarkCard = ({ children, className = "" }) => (
-  <div
-    className={`bg-[#3a2618] text-white rounded-lg p-6 shadow-md ${className}`}
-  >
-    {children}
-  </div>
-);
 
 export default function OrderConfirmation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    cartItems,
-    emptyCart,
-    instantApplied: _instantApplied,
-    setLoyaltyPoints,
-  } = useCart();
-
-  // Order data state
+  const { cartItems, emptyCart, setLoyaltyPoints } = useCart();
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-
-  // Optional UX state
   const [rating, setRating] = useState(0);
   const [saveAddress, setSaveAddress] = useState(false);
 
-  // Load order data on mount (prefer backend when orderId is provided).
-  // If no server orderId is provided, fall back to a local/hardcoded snapshot built from
-  // cartItems or previously saved localStorage snapshots so the page still shows a confirmation.
   useEffect(() => {
     const loadOrderData = async () => {
-      setLoading(true);
-      setNotFound(false);
+      setLoading(true); setNotFound(false);
       const passedOrderId = location.state?.orderId;
-
-      // If we have a server-provided order id, prefer fetching it.
       if (passedOrderId) {
         try {
           const order = await orderAPI.getOrder(passedOrderId);
-          if (!order) {
-            setNotFound(true);
-            return;
-          }
-
-          const orderDateObj = order.createdAt
-            ? new Date(order.createdAt)
-            : new Date();
-          const orderDate = orderDateObj.toLocaleDateString();
-          const orderTime = orderDateObj.toLocaleTimeString();
-          const items = order.items || [];
-          const enrichedItems = (items || []).map((it) => ({
-            ...it,
-            name: it.name || it.title || it.productName || "Item",
-            price: it.price ?? it.unitPrice ?? it.amount ?? 0,
-          }));
-
-          const computedSubtotal = enrichedItems.reduce(
-            (acc, it) => acc + (it.price || 0) * (it.quantity || 1),
-            0
-          );
-          const subtotal =
-            typeof order.subtotal === "number" ? order.subtotal : computedSubtotal;
+          if (!order) { setNotFound(true); return; }
+          const date = new Date(order.createdAt || Date.now());
+          const items = (order.items || []).map(it => ({ ...it, name: it.name || "Item", price: it.price || 0 }));
+          const computedSub = items.reduce((a, i) => a + (i.price||0)*(i.quantity||1), 0);
+          const sub = typeof order.subtotal === "number" ? order.subtotal : computedSub;
           const tax = typeof order.tax === "number" ? order.tax : 0;
-          const deliveryFee =
-            typeof order.deliveryFee === "number" ? order.deliveryFee : null;
-          const total =
-            typeof order.totalAmount === "number"
-              ? order.totalAmount
-              : +(subtotal + tax + (deliveryFee || 0)).toFixed(2);
-          const userName =
-            order.userId?.name || order.customerName || "";
-          const paymentMethod = order.paymentMethod || "Unknown";
-          const isPickup = deliveryFee === null;
-          const deliveryMethod = isPickup
-            ? "Pickup from Restaurant"
-            : "Home Delivery";
-          const deliveryAddress = order.deliveryLocation?.address || "";
-          const estimatedTime = order.estimatedDeliveryTime
-            ? `Estimated ${new Date(order.estimatedDeliveryTime).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`
-            : isPickup
-            ? "Ready for pickup in 40 minutes"
-            : "Delivery in 40 minutes";
-
+          const df = typeof order.deliveryFee === "number" ? order.deliveryFee : null;
+          const tot = typeof order.totalAmount === "number" ? order.totalAmount : +(sub+tax+(df||0)).toFixed(2);
           setOrderData({
-            orderId: order.orderId || order._id,
-            orderDate,
-            orderTime,
-            userName: userName || "Valued Customer",
-            paymentMethod,
-            deliveryAddress,
-            deliveryMethod,
-            estimatedTime,
-            items: enrichedItems,
-            subtotal,
-            tax,
-            deliveryFee,
-            total,
+            orderId: order.orderId || order._id, orderDate: date.toLocaleDateString(), orderTime: date.toLocaleTimeString(),
+            userName: order.userId?.name || "Valued Customer", paymentMethod: order.paymentMethod || "COD",
+            deliveryAddress: order.deliveryLocation?.address || "", deliveryMethod: df === null ? "Pickup" : "Home Delivery",
+            estimatedTime: order.estimatedDeliveryTime ? `${new Date(order.estimatedDeliveryTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}` : "40 minutes",
+            items, subtotal: sub, tax, deliveryFee: df, total: tot,
           });
-
-          // Clear cart; refresh loyalty points from profile if available
           emptyCart();
-          try {
-            const profile = await profileAPI.getProfile();
-            if (profile && typeof profile.loyaltyPoints !== "undefined") {
-              setLoyaltyPoints(profile.loyaltyPoints || 0);
-            }
-          } catch (e) {
-            console.warn("Failed to refresh loyalty points after order", e);
-          }
-        } catch (err) {
-          console.warn("Failed to fetch order from server", err);
-          setNotFound(true);
-        } finally {
-          setLoading(false);
-        }
-
+          try { const profile = await profileAPI.getProfile(); if (profile) setLoyaltyPoints(profile.loyaltyPoints||0); } catch {}
+        } catch (err) { setNotFound(true); }
+        finally { setLoading(false); }
         return;
       }
-
-      // No server orderId — build a local/hardcoded order snapshot so the user still sees confirmation.
-      try {
-        // Try to re-use the most recent locally saved order for the user (if any)
-        const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
-        const email = userInfo?.email;
-        let existingOrders = [];
-        if (email) {
-          existingOrders = JSON.parse(
-            localStorage.getItem(`orders_${email}`) || "[]"
-          );
-        }
-
-        let syntheticOrder = null;
-        if (existingOrders && existingOrders.length) {
-          syntheticOrder = existingOrders[existingOrders.length - 1];
-        }
-
-        // If no snapshot, build one from cartItems (hardcoded fallback)
-        if (!syntheticOrder) {
-          const items = (cartItems || []).map((it) => ({
-            name: it.name || it.title || it.productName || "Item",
-            price: it.price ?? it.unitPrice ?? it.amount ?? 0,
-            quantity: it.quantity || 1,
-          }));
-
-          const subtotal = items.reduce(
-            (acc, it) => acc + (it.price || 0) * (it.quantity || 1),
-            0
-          );
-          const tax = 0;
-          const deliveryFee = 0;
-          const total = +(subtotal + tax + deliveryFee).toFixed(2);
-
-          syntheticOrder = {
-            orderId: `local_${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            customerName:
-              userInfo?.name ||
-              `${userInfo?.firstName || ""} ${
-                userInfo?.lastName || ""
-              }`.trim() ||
-              "Guest",
-            items,
-            subtotal,
-            tax,
-            deliveryFee,
-            total,
-            address: userInfo?.address || "",
-            paymentMethod: "Cash on Delivery",
-          };
-
-          // Persist the snapshot per user so it's available later
-          if (email) {
-            existingOrders.push(syntheticOrder);
-            localStorage.setItem(
-              `orders_${email}`,
-              JSON.stringify(existingOrders)
-            );
-          }
-        }
-
-        const orderDateObj = new Date(syntheticOrder.createdAt);
-        const orderDate = orderDateObj.toLocaleDateString();
-        const orderTime = orderDateObj.toLocaleTimeString();
-        const enrichedItems = (syntheticOrder.items || []).map((it) => ({
-          ...it,
-          name: it.name || "Item",
-          price: it.price || 0,
-        }));
-
-        setOrderData({
-          orderId: syntheticOrder.orderId || syntheticOrder._id,
-          orderDate,
-          orderTime,
-          userName: syntheticOrder.customerName || "Guest",
-          paymentMethod: syntheticOrder.paymentMethod || "Unknown",
-          deliveryAddress: syntheticOrder.deliveryLocation?.address || syntheticOrder.address || "",
-          deliveryMethod: syntheticOrder.deliveryFee === null
-            ? "Pickup from Restaurant"
-            : "Home Delivery",
-          estimatedTime: syntheticOrder.estimatedDeliveryTime
-            ? `Estimated ${new Date(syntheticOrder.estimatedDeliveryTime).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`
-            : "Delivery in 40 minutes",
-          items: enrichedItems,
-          subtotal: syntheticOrder.subtotal || 0,
-          tax: syntheticOrder.tax || 0,
-          deliveryFee: typeof syntheticOrder.deliveryFee === "number" ? syntheticOrder.deliveryFee : 0,
-          total: syntheticOrder.totalAmount || syntheticOrder.total || 0,
-        });
-
-        // Clear cart locally
-        emptyCart();
-        try {
-          const profile = await profileAPI.getProfile();
-          if (profile && typeof profile.loyaltyPoints !== "undefined") {
-            setLoyaltyPoints(profile.loyaltyPoints || 0);
-          }
-        } catch {
-          // ignore
-        }
-      } catch (e) {
-        console.warn("Failed to build local/hardcoded order", e);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
+      // Fallback
+      const userInfo = JSON.parse(localStorage.getItem("userInfo")||"null");
+      const items = (cartItems||[]).map(i=>({name:i.name||"Item",price:i.price||0,quantity:i.quantity||1}));
+      const sub = items.reduce((a,i)=>a+(i.price||0)*(i.quantity||1),0);
+      setOrderData({
+        orderId:`local_${Date.now()}`,orderDate:new Date().toLocaleDateString(),orderTime:new Date().toLocaleTimeString(),
+        userName:userInfo?.name||"Guest",paymentMethod:"Cash on Delivery",deliveryAddress:"",
+        deliveryMethod:"Home Delivery",estimatedTime:"40 minutes",items,subtotal:sub,tax:0,deliveryFee:0,total:sub,
+      });
+      emptyCart();
+      setLoading(false);
     };
-
     loadOrderData();
   }, [location.state?.orderId]);
 
-  // Handle rating
-  const handleRating = (value) => {
-    setRating(value);
-  };
-
-  // Handle continue shopping
-  const handleContinueShopping = () => {
-    navigate("/user/menu");
-  };
-
-  // Handle view order history (placeholder)
-  {
-    /*const handleViewOrderHistory = () => {
-    // For now, just navigate to profile or show alert
-    alert('Order history feature coming soon!');
-    navigate('/user/profile');
-  };*/
-  }
-
-  // Handle download invoice (placeholder)
-  {
-    /*const handleDownloadInvoice = () => {
-    alert("Invoice download feature coming soon!");
-  };*/
-  }
-
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading order...
-      </div>
-    );
-  if (notFound || !orderData)
-    return (
-      <div className="min-h-screen bg-[#FF6A00] flex items-center justify-center">
-        <div className="text-center text-white">
-          <h2 className="text-2xl font-bold mb-4">Order not found</h2>
-          <p className="mb-6">
-            We couldn't find the requested order. If you just placed it, please
-            wait a moment and check your orders in your profile.
-          </p>
-          <div className="flex justify-center gap-4">
-            <button
-              onClick={() => navigate("/user/menu")}
-              className="px-4 py-2 bg-orange-600 rounded text-white"
-            >
-              Continue Shopping
-            </button>
-            <button
-              onClick={() => navigate("/user/profile")}
-              className="px-4 py-2 border border-white rounded text-white"
-            >
-              View Profile
-            </button>
-          </div>
+  if (loading) return <div className="min-h-screen bg-[#FFF8F1] flex items-center justify-center text-[#2B1D17]/60">Loading order...</div>;
+  if (notFound || !orderData) return (
+    <div className="min-h-screen bg-[#FFF8F1] flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="font-serif text-2xl font-bold text-[#2B1D17] mb-4">Order not found</h2>
+        <div className="flex justify-center gap-4">
+          <button onClick={()=>navigate("/user/menu")} className="btn-primary">Continue Shopping</button>
+          <button onClick={()=>navigate("/user/profile")} className="btn-secondary">View Profile</button>
         </div>
       </div>
-    );
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#FF6A00] flex flex-col">
-      <main className="flex-1 px-8 py-12 text-white">
-        {/* Success Message */}
-        <div className="max-w-4xl mx-auto text-center mb-8 animate-fade-in">
-          <div className="bg-green-600 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+    <div className="min-h-screen bg-[#FFF8F1]">
+      <section className="relative bg-gradient-to-b from-[#2B1D17] to-[#F47A20]/10 pt-32 pb-16">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/30 animate-scale-in">
             <FaCheck className="text-white text-3xl" />
           </div>
-          <h1 className="text-4xl font-bold mb-2">
-            🎉 Thank You, {orderData.userName}!
-          </h1>
-          <p className="text-lg mb-4">
-            Your order has been successfully placed.
-          </p>
-          <p className="text-sm text-gray-200">
-            Your delicious food is being prepared. You will receive an update
-            once it's out for delivery.
-          </p>
+          <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Order Confirmed</span>
+          <h1 className="font-serif text-4xl font-bold text-white mt-3 mb-3">Thank You, {orderData.userName}!</h1>
+          <p className="text-white/70">Your order has been successfully placed and is being prepared.</p>
         </div>
+      </section>
 
+      <main className="py-12 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Order Summary */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Order Summary Card */}
-            <DarkCard className="animate-fade-in-delay">
-              <h3 className="font-semibold mb-4 text-xl">Order Summary</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <p className="text-sm text-gray-300">Order ID</p>
-                  <p className="font-semibold">{orderData.orderId}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-300">Order Date & Time</p>
-                  <p className="font-semibold">
-                    {orderData.orderDate} at {orderData.orderTime}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-300">Payment Method</p>
-                  <p className="font-semibold">{orderData.paymentMethod}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-300">Delivery Method</p>
-                  <p className="font-semibold">{orderData.deliveryMethod}</p>
-                </div>
-                {orderData.deliveryAddress && (
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-300">Delivery Address</p>
-                    <p className="font-semibold">{orderData.deliveryAddress}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm text-gray-300">
-                    Estimated Delivery Time
-                  </p>
-                  <p className="font-semibold text-orange-400">
-                    {orderData.estimatedTime}
-                  </p>
-                </div>
+            <div className="card-premium p-6">
+              <h3 className="font-serif text-xl font-bold text-[#2B1D17] mb-5">Order Details</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-[#2B1D17]/40">Order ID</span><p className="font-semibold">{orderData.orderId}</p></div>
+                <div><span className="text-[#2B1D17]/40">Date</span><p className="font-semibold">{orderData.orderDate} {orderData.orderTime}</p></div>
+                <div><span className="text-[#2B1D17]/40">Payment</span><p className="font-semibold">{orderData.paymentMethod}</p></div>
+                <div><span className="text-[#2B1D17]/40">Delivery</span><p className="font-semibold">{orderData.deliveryMethod}</p></div>
+                {orderData.deliveryAddress && <div className="col-span-2"><span className="text-[#2B1D17]/40">Address</span><p className="font-semibold">{orderData.deliveryAddress}</p></div>}
+                <div className="col-span-2"><span className="text-[#2B1D17]/40">Estimated</span><p className="font-semibold text-[#F47A20]">{orderData.estimatedTime}</p></div>
               </div>
-            </DarkCard>
+            </div>
 
-            {/* Ordered Items */}
-            <DarkCard className="animate-fade-in-delay">
-              <h3 className="font-semibold mb-4">Ordered Items</h3>
+            <div className="card-premium p-6">
+              <h3 className="font-serif text-xl font-bold text-[#2B1D17] mb-5">Items</h3>
               <div className="space-y-4">
-                {orderData.items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between border-b border-[#5a3f1a] pb-4 last:border-b-0 last:pb-0"
-                  >
-                    <div>
-                      <h4 className="font-semibold">{item.name}</h4>
-                      <p className="text-sm text-gray-300">
-                        Quantity: {item.quantity}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-300">
-                        ${(item.price || 0).toFixed(2)} each
-                      </p>
-                    </div>
+                {orderData.items.map((item,idx)=>(
+                  <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-4 last:border-0 last:pb-0">
+                    <div><h4 className="font-semibold text-[#2B1D17]">{item.name}</h4><p className="text-[#2B1D17]/40 text-sm">Qty: {item.quantity}</p></div>
+                    <p className="font-bold text-[#2B1D17]">${((item.price||0)*(item.quantity||1)).toFixed(2)}</p>
                   </div>
                 ))}
               </div>
-
-              {/* Order Totals */}
-              <div className="border-t border-[#5a3f1a] pt-4 mt-4 space-y-2">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${orderData.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>${orderData.tax.toFixed(2)}</span>
-                </div>
-                {orderData.deliveryFee > 0 && (
-                  <div className="flex justify-between">
-                    <span>Delivery Fee</span>
-                    <span>${orderData.deliveryFee.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg border-t border-[#5a3f1a] pt-2">
-                  <span>Total Amount Paid</span>
-                  <span>${orderData.total.toFixed(2)}</span>
-                </div>
+              <div className="border-t border-gray-100 pt-4 mt-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-[#2B1D17]/60">Subtotal</span><span>${orderData.subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-[#2B1D17]/60">Tax</span><span>${orderData.tax.toFixed(2)}</span></div>
+                {orderData.deliveryFee > 0 && <div className="flex justify-between"><span className="text-[#2B1D17]/60">Delivery Fee</span><span>${orderData.deliveryFee.toFixed(2)}</span></div>}
+                <div className="flex justify-between font-serif text-xl font-bold text-[#2B1D17] pt-3 border-t border-gray-200"><span>Total</span><span>${orderData.total.toFixed(2)}</span></div>
               </div>
-            </DarkCard>
+            </div>
           </div>
 
-          {/* Right Column: Actions and Optional Features */}
           <div className="space-y-6">
-            {/* Action Buttons */}
-            <DarkCard className="animate-fade-in-delay">
-              <h3 className="font-semibold mb-4">What's Next?</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={handleContinueShopping}
-                  className="w-full bg-orange-600 text-white px-4 py-3 rounded hover:bg-orange-700 flex items-center justify-center gap-2"
-                >
-                  <FaShoppingCart /> Continue Shopping
-                </button>
-                {/*<button
-                  onClick={handleViewOrderHistory}
-                  className="w-full bg-transparent border border-white text-white px-4 py-3 rounded hover:bg-white hover:text-[#FF6A00] flex items-center justify-center gap-2"
-                >
-                  <FaHistory /> View Order History
-                </button>*/}
-              </div>
-            </DarkCard>
+            <div className="card-premium p-6">
+              <h3 className="font-serif text-lg font-bold text-[#2B1D17] mb-5">What's Next?</h3>
+              <button onClick={()=>navigate("/user/menu")} className="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                <FaShoppingCart /> Continue Shopping
+              </button>
+            </div>
 
-            {/* Optional UX Elements */}
-            <DarkCard className="animate-fade-in-delay">
-              <h3 className="font-semibold mb-4">Rate Your Experience</h3>
+            <div className="card-premium p-6">
+              <h3 className="font-serif text-lg font-bold text-[#2B1D17] mb-4">Rate Your Experience</h3>
               <div className="flex gap-1 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <FaStar
-                    key={star}
-                    className={`cursor-pointer text-xl ${
-                      star <= rating ? "text-yellow-400" : "text-gray-400"
-                    }`}
-                    onClick={() => handleRating(star)}
-                  />
+                {[1,2,3,4,5].map(s=>(
+                  <FaStar key={s} className={`cursor-pointer text-xl ${s<=rating?"text-[#D9A441]":"text-gray-200"}`} onClick={()=>setRating(s)} />
                 ))}
               </div>
-              {rating > 0 && (
-                <p className="text-sm text-gray-300">
-                  Thank you for your {rating} star rating!
-                </p>
-              )}
-            </DarkCard>
+              {rating > 0 && <p className="text-sm text-[#2B1D17]/60">Thanks for your {rating}-star rating!</p>}
+            </div>
 
-            <DarkCard className="animate-fade-in-delay">
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-semibold">
-                  Save this address for next order
-                </span>
-                <button
-                  onClick={() => setSaveAddress(!saveAddress)}
-                  className="text-orange-400"
-                >
-                  {saveAddress ? (
-                    <FaToggleOn className="text-2xl" />
-                  ) : (
-                    <FaToggleOff className="text-2xl text-gray-400" />
-                  )}
-                </button>
+            <div className="card-premium p-6">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-[#2B1D17] text-sm">Save this address</span>
+                <button onClick={()=>setSaveAddress(!saveAddress)}>{saveAddress?<FaToggleOn className="text-[#F47A20] text-2xl"/>:<FaToggleOff className="text-gray-300 text-2xl"/>}</button>
               </div>
-              {/*<button
-                onClick={handleDownloadInvoice}
-                className="w-full bg-transparent border border-orange-400 text-orange-400 px-4 py-2 rounded hover:bg-orange-400 hover:text-white flex items-center justify-center gap-2"
-              >
-                <FaDownload /> Download Invoice (PDF)
-              </button>*/}
-            </DarkCard>
+            </div>
           </div>
         </div>
       </main>

@@ -1,221 +1,130 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context.cart.jsx";
+import { useAuth } from "../../contexts/AuthContext";
 import { useSpiceAndSidesFlow } from "../components/SpiceAndSidesFlow";
-import { menuAPI, categoryAPI } from "../../services/api";
+import { menuAPI } from "../../services/api";
 import { useState, useEffect } from "react";
+import { FaStar, FaArrowLeft } from "react-icons/fa";
 
-const tagColors = {
-  GF: "bg-green-600",
-  LF: "bg-blue-600",
-};
+const spiceColors = { Mild: "bg-green-500", "Mild Medium": "bg-yellow-500", Medium: "bg-orange-500", "Medium Hot": "bg-red-400", Hot: "bg-red-600", "Extra Hot": "bg-red-800" };
+const tagColors = { GF: "bg-green-600", LF: "bg-blue-600" };
 
 const CategoryPage = () => {
   const { category } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useCart();
-  const { startFlow, spiceModal, sidesModal } = useSpiceAndSidesFlow(addToCart);
+  const { isAuthenticated } = useAuth();
+  const loginRedirect = () => navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
+  const { startFlow, spiceModal, sidesModal } = useSpiceAndSidesFlow(addToCart, isAuthenticated(), loginRedirect);
   const decodedCategory = decodeURIComponent(category);
-  const [resolvedCategoryName, setResolvedCategoryName] =
-    useState(decodedCategory);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [itemQuantities, setItemQuantities] = useState({});
-  const API_BASE = "localhost:5000/api";
 
   useEffect(() => {
     (async () => {
       try {
-        // Fetch menu items directly by category name
-        // Backend will handle category name/slug resolution
         const serverItems = await menuAPI.getMenuByCategory(decodedCategory);
-        if (Array.isArray(serverItems)) {
-          setItems(serverItems);
-        } else {
-          setItems([]);
-        }
-        setResolvedCategoryName(decodedCategory);
-        setLoading(false);
-      } catch (err) {
-        console.warn("Failed to load items for category", err);
-        setItems([]);
-        setResolvedCategoryName(decodedCategory);
-        setLoading(false);
-      }
+        setItems(Array.isArray(serverItems) ? serverItems : []);
+      } catch (err) { console.warn("Failed to load items", err); setItems([]); }
+      finally { setLoading(false); }
     })();
   }, [category]);
 
-  // Find category image from Menu.jsx mapping
-  const categoryImages = {
-    Appetizers: "Samosa .jpg",
-    "Butter Dishes": "butter chicken.jpg",
-    "Korma Dishes": "korma.jpg",
-    "Curry Dishes": "Curry..jpg",
-    "Masala Dishes": "Chana Masala.jpg",
-    "Coconut Curry Dishes": "Cocnut Curry.jpg",
-    "Tandoori Dishes": "Tandoori Chicken Tikka .jpg",
-    "Biryani Dishes": "Biryani.jpg",
-    "Karahi Dishes": "Clay Oven (Tandoor).jpg",
-    "Vindaloo Dishes": "Curry..jpg",
-    "Jalfrezi Dishes": "Jalfrezi.jpg",
-    "Palak Dishes": "Palak Paneer.jpg",
-    "Mango Curry Dishes": "Curry..jpg",
-    "Vegetable Dishes": "Aalo Gobi (Cauliflower).jpg",
-    "Indian Naan Bread": "Garlic Naan..jpg",
-    "Salads & Sides": "SALAD.jpg",
-    "Spice Hut Combo Specials": "Spice hut.jpg",
-    "Indian Desserts": "Gulab Jamun..jpg",
-  };
-
-  // Helper to get dish image --- prefer category image or a site placeholder
-  function getDishImage(dishName, categoryName) {
-    // Fallback to category image
-    if (categoryImages[categoryName]) return `/${categoryImages[categoryName]}`;
-    // Site-level placeholder
-    return "/home.jpg";
-  }
-
-  // Handle quantity changes for items
   const handleQuantityChange = (itemId, delta) => {
-    setItemQuantities((prev) => ({
-      ...prev,
-      [itemId]: Math.max(1, (prev[itemId] || 1) + delta),
-    }));
+    setItemQuantities((prev) => ({ ...prev, [itemId]: Math.max(1, (prev[itemId] || 1) + delta) }));
   };
 
-  // Resolve image string from DB or static fallback
-  function resolveImageString(img, dishName, categoryName) {
-    if (!img) return getDishImage(dishName, categoryName);
-    if (typeof img !== "string") return getDishImage(dishName, categoryName);
-    const trimmed = img.trim();
-    // Absolute URL
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    // Protocol-relative
-    if (/^\/\//.test(trimmed)) return window.location.protocol + trimmed;
-    // Starts with /uploads -> prepend API_BASE
-    if (trimmed.startsWith("/uploads")) return `${API_BASE}${trimmed}`;
-    // Starts with uploads (no leading slash)
-    if (trimmed.startsWith("uploads/")) return `${API_BASE}/${trimmed}`;
-    // If it contains uploads anywhere, prefix API_BASE
-    if (trimmed.includes("uploads/"))
-      return `${API_BASE}/${trimmed.replace(/^\//, "")}`;
-    // If it's a filename like 'abc.jpg', assume it's in uploads
-    if (/^[^\s/]+\.[a-z]{2,4}$/i.test(trimmed))
-      return `${API_BASE}/uploads/${trimmed}`;
-    // If it's an absolute path on the frontend (starts with /), return as-is
-    if (trimmed.startsWith("/")) return trimmed;
-    // Fallback to the generated dish image
-    return getDishImage(dishName, categoryName);
-  }
+  const resolveImage = (img, dishName) => {
+    if (img && typeof img === 'string') {
+      if (/^https?:\/\//i.test(img)) return img;
+      if (img.startsWith('/uploads')) return `localhost:5000/api${img}`;
+      if (img.startsWith('uploads/')) return `localhost:5000/api/${img}`;
+      if (/^[^\s/]+\.[a-z]{2,4}$/i.test(img)) return `localhost:5000/api/uploads/${img}`;
+      if (img.startsWith('/')) return img;
+    }
+    return "/home.jpg";
+  };
 
   return (
-    <div className="min-h-screen bg-[#FF6A00] flex flex-col">
-      <main className="flex-1 py-12 px-4">
-        <h1 className="text-4xl font-bold text-center text-white mb-8">
-          {resolvedCategoryName}
-        </h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-          {items.filter((item) => item.status === "Available").length === 0 &&
-            !loading && (
-              <div className="col-span-full text-center text-white">
-                No menu items found for this category.
-              </div>
-            )}
-          {items
-            .filter((item) => item.status === "Available")
-            .map((dish) => (
-              <div
-                key={dish.name}
-                className="bg-black bg-opacity-70 rounded-2xl p-8 w-full max-w-[480px] min-h-[520px] mx-auto flex flex-col items-center justify-between cursor-pointer transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg"
-              >
-                <img
-                  src={resolveImageString(
-                    dish.image,
-                    dish.name,
-                    decodedCategory
-                  )}
-                  alt={dish.name}
-                  className="rounded-2xl mb-4 object-contain w-full h-56"
-                />
-                <h3 className="font-bold text-2xl mb-2 text-white text-center">
-                  {dish.name}
-                </h3>
-                <span className="text-[#FFB366] font-bold text-lg mb-2">
-                  ${dish.price.toFixed(2)}
-                </span>
-                <div className="flex gap-2 mb-2">
-                  {dish.subCategory &&
-                    dish.subCategory
-                      .split(",")
-                      .map((tag) => tag.trim())
-                      .filter((tag) => tagColors[tag])
-                      .map((tag) => (
-                        <span
-                          key={tag}
-                          className={`text-xs text-white px-2 py-1 rounded ${tagColors[tag]}`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                </div>
-                {dish.description && (
-                  <p className="text-base mb-4 text-white/80 font-normal text-center">
-                    {dish.description}
-                  </p>
-                )}
-                <div className="flex-1 flex flex-col justify-end w-full">
-                  {/* Quantity Selector */}
-                  <div className="flex items-center justify-center mb-4">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuantityChange(dish._id, -1);
-                      }}
-                      className="bg-[#4B0B0B] text-white font-bold px-3 py-1 rounded-l hover:bg-[#FFB366] hover:text-black transition-all"
-                    >
-                      -
-                    </button>
-                    <span className="text-white px-4 py-1 font-bold">
-                      {itemQuantities[dish._id] || 1}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleQuantityChange(dish._id, 1);
-                      }}
-                      className="bg-[#4B0B0B] text-white font-bold px-3 py-1 rounded-r hover:bg-[#FFB366] hover:text-black transition-all"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    className="mx-auto w-3/4 block bg-[#4B0B0B] text-white text-lg px-6 py-2 rounded hover:bg-[#FFB366] hover:text-black transition-all"
-                    onClick={() =>
-                      startFlow(
-                        {
-                          menuItemId: dish._id,
-                          name: dish.name,
-                          price: dish.price,
-                          category: decodedCategory,
-                          tags: dish.subCategory
-                            ? dish.subCategory
-                                .split(",")
-                                .map((tag) => tag.trim())
-                            : [],
-                          description: dish.description,
-                        },
-                        itemQuantities[dish._id] || 1
-                      )
-                    }
-                  >
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))}
+    <div className="min-h-screen bg-[#FFF8F1] flex flex-col">
+      {/* Hero */}
+      <section className="relative bg-[#2B1D17] pt-32 pb-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <button onClick={() => navigate('/user/menu')} className="text-white/60 hover:text-white flex items-center gap-2 mb-6 transition-colors text-sm">
+            <FaArrowLeft /> Back to Menu
+          </button>
+          <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Category</span>
+          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-white mt-3">
+            {decodedCategory}
+          </h1>
         </div>
-        {spiceModal}
-        {sidesModal}
+      </section>
+
+      {/* Items */}
+      <main className="flex-1 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {loading ? (
+            <div className="text-center py-12 text-[#2B1D17]/60">Loading dishes...</div>
+          ) : items.filter(i => i.status === "Available").length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-[#2B1D17]/60 text-lg">No menu items found for this category.</p>
+              <button onClick={() => navigate('/user/menu')} className="btn-primary mt-6">Browse Full Menu</button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.filter(i => i.status === "Available").map((dish) => (
+                <div key={dish._id || dish.name} className="card-premium overflow-hidden group">
+                  <div className="relative h-56 overflow-hidden">
+                    <img src={resolveImage(dish.image, dish.name)} alt={dish.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    {dish.subCategory && (
+                      <div className="absolute top-3 left-3 flex gap-1.5">
+                        {dish.subCategory.split(",").map((tag) => tag.trim()).filter((t) => tagColors[t]).map((t) => (
+                          <span key={t} className={`text-[10px] text-white px-2 py-0.5 rounded-full font-semibold ${tagColors[t]}`}>{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 text-sm font-bold text-[#2B1D17] shadow-lg">${dish.price.toFixed(2)}</div>
+                    <div className="absolute bottom-3 left-3">
+                      <span className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-medium text-[#2B1D17]">
+                        <FaStar className="text-[#D9A441]" size={10} /> 4.8
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-serif text-lg font-bold text-[#2B1D17] mb-1">{dish.name}</h3>
+                    {dish.description && (
+                      <p className="text-[#2B1D17]/50 text-sm line-clamp-2 mb-4">{dish.description}</p>
+                    )}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center bg-gray-100 rounded-full overflow-hidden">
+                        <button onClick={(e) => { e.stopPropagation(); handleQuantityChange(dish._id, -1); }}
+                          className="w-9 h-9 flex items-center justify-center text-[#2B1D17] hover:bg-gray-200 transition-colors font-medium">−</button>
+                        <span className="px-3 font-semibold text-[#2B1D17] text-sm">{itemQuantities[dish._id] || 1}</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleQuantityChange(dish._id, 1); }}
+                          className="w-9 h-9 flex items-center justify-center text-[#2B1D17] hover:bg-gray-200 transition-colors font-medium">+</button>
+                      </div>
+                      <button onClick={() => startFlow({
+                        menuItemId: dish._id, name: dish.name, price: dish.price,
+                        category: decodedCategory,
+                        tags: dish.subCategory ? dish.subCategory.split(",").map(t => t.trim()) : [],
+                        description: dish.description,
+                      }, itemQuantities[dish._id] || 1)}
+                        className="btn-primary text-xs py-2.5 px-4 flex-shrink-0">
+                        Add to Cart
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </main>
+      {spiceModal}{sidesModal}
     </div>
   );
 };
