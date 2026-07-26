@@ -12,11 +12,9 @@ export default function Register() {
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo") || null;
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
-  const [otpMethod, setOtpMethod] = useState('email');
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [modalEmail, setModalEmail] = useState('');
   const [modalPhone, setModalPhone] = useState('');
-  const [modalOtpMethod, setModalOtpMethod] = useState('email');
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState([]);
@@ -39,10 +37,9 @@ export default function Register() {
     if (formData.password !== formData.confirmPassword) return setError("Passwords do not match");
     setLoading(true);
     try {
-      await authAPI.userSignup({ name: formData.name, email: formData.email, phone: formData.phone, password: formData.password, otpMethod, role: "user" });
+      await authAPI.userSignup({ name: formData.name, email: formData.email, phone: formData.phone, password: formData.password, otpMethod: 'sms', role: "user" });
       setModalEmail(formData.email);
       setModalPhone(formData.phone);
-      setModalOtpMethod(otpMethod);
       setShowOtpModal(true);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Failed to register");
@@ -52,7 +49,10 @@ export default function Register() {
   const handleResend = async () => {
     if (!formData.email) return setResendMessage("Please enter your email above.");
     setResendLoading(true); setResendMessage("");
-    try { await authAPI.resendVerification({ email: formData.email }); setResendMessage("Verification code sent."); }
+    try {
+      await authAPI.resendVerification({ email: formData.email, phone: formData.phone, otpMethod: 'sms' });
+      setResendMessage('Verification code sent via SMS.');
+    }
     catch (err) { setResendMessage(err.response?.data?.message || err.message || "Failed to resend"); }
     finally { setResendLoading(false); }
   };
@@ -131,35 +131,22 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-[#2B1D17] mb-2">Full Name</label>
                 <div className="relative">
-                  <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input name="name" type="text" placeholder="Full Name" value={formData.name} onChange={handleChange} className="input-premium pl-12" required />
+                  <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input name="name" type="text" placeholder="Full Name" value={formData.name} onChange={handleChange} className="input-premium pl-14" required />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2B1D17] mb-2">Email Address</label>
                 <div className="relative">
-                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input name="email" type="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} className="input-premium pl-12" required />
+                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input name="email" type="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} className="input-premium pl-14" required />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2B1D17] mb-2">Phone Number</label>
                 <div className="relative">
-                  <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input name="phone" type="tel" placeholder="Enter your phone number" value={formData.phone} onChange={handleChange} className="input-premium pl-12" required />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#2B1D17] mb-2">Verification Method</label>
-                <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="otpMethod" value="email" checked={otpMethod === 'email'} onChange={() => setOtpMethod('email')} className="accent-[#F47A20]" />
-                    <span className="text-sm text-[#2B1D17]">Email</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="otpMethod" value="sms" checked={otpMethod === 'sms'} onChange={() => setOtpMethod('sms')} className="accent-[#F47A20]" />
-                    <span className="text-sm text-[#2B1D17]">SMS</span>
-                  </label>
+                  <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input name="phone" type="tel" placeholder="Enter your phone number" value={formData.phone} onChange={handleChange} className="input-premium pl-14" required />
                 </div>
               </div>
               <div>
@@ -213,7 +200,7 @@ export default function Register() {
       </div>
 
       {showOtpModal && (
-        <OtpModal email={modalEmail} phone={modalPhone} otpMethod={modalOtpMethod}
+        <OtpModal email={modalEmail} phone={modalPhone} otpMethod="sms"
           onClose={() => setShowOtpModal(false)}
           onVerified={() => { setShowOtpModal(false); navigate(returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'); }} />
       )}

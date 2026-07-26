@@ -15,7 +15,6 @@ export default function ForgotPassword() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [passwordErrors, setPasswordErrors] = useState([]);
-  const [otpMethod, setOtpMethod] = useState('email');
   const [sendingOtp, setSendingOtp] = useState(false);
 
   const handleVerify = async (e) => {
@@ -27,7 +26,7 @@ export default function ForgotPassword() {
 
   const handleSendOtp = async () => {
     if (!email) return setError('Please provide your email.'); setSendingOtp(true); setError(''); setSuccess('');
-    try { await authAPI.resendVerification({ email, phone, otpMethod }); setSuccess(`Code sent via ${otpMethod.toUpperCase()}.`); }
+    try { await authAPI.resendVerification({ email, phone, otpMethod: 'sms' }); setSuccess('SMS code sent.'); }
     catch (err) { setError(err.response?.data?.message || err.message || 'Failed to send code.'); }
     finally { setSendingOtp(false); }
   };
@@ -71,20 +70,13 @@ export default function ForgotPassword() {
               <form onSubmit={handleVerify} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-[#2B1D17] mb-2">Email</label>
-                  <div className="relative"><FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" /><input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-12" required /></div>
+                  <div className="relative"><FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-14" required /></div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#2B1D17] mb-2">Phone</label>
-                  <div className="relative"><FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" /><input type="tel" placeholder="Enter your phone number" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-premium pl-12" required /></div>
+                  <div className="relative"><FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input type="tel" placeholder="Enter your phone number" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-premium pl-14" required /></div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#2B1D17] mb-2">Verification method</label>
-                  <div className="flex items-center gap-6">
-                    <label className="flex items-center gap-2"><input type="radio" checked={otpMethod === 'email'} onChange={() => setOtpMethod('email')} className="accent-[#F47A20]" /><span className="text-sm">Email</span></label>
-                    <label className="flex items-center gap-2"><input type="radio" checked={otpMethod === 'sms'} onChange={() => setOtpMethod('sms')} className="accent-[#F47A20]" /><span className="text-sm">SMS</span></label>
-                  </div>
-                </div>
-                <button type="button" onClick={handleSendOtp} disabled={sendingOtp} className="btn-secondary w-full py-3 text-sm">{sendingOtp ? "Sending..." : "Send verification code"}</button>
+                <button type="button" onClick={handleSendOtp} disabled={sendingOtp} className="btn-secondary w-full py-3 text-sm">{sendingOtp ? "Sending..." : "Send SMS verification code"}</button>
                 <button type="submit" disabled={isLoading} className="btn-primary w-full py-3.5">{isLoading ? "Verifying..." : "Verify Identity"}</button>
               </form>
             ) : (
