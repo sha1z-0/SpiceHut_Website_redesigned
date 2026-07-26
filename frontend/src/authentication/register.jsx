@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { FiMail, FiUser, FiAlertCircle, FiPhone } from "react-icons/fi";
+import { FiUser, FiAlertCircle } from "react-icons/fi";
 import { FaLocationArrow } from "react-icons/fa";
 import { authAPI } from "../services/api";
 import PasswordInput from "../User-Frontend/components/PasswordInput";
@@ -130,24 +130,15 @@ export default function Register() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-[#2B1D17] mb-2">Full Name</label>
-                <div className="relative">
-                  <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <input name="name" type="text" placeholder="Full Name" value={formData.name} onChange={handleChange} className="input-premium pl-14" required />
-                </div>
+                <input name="name" type="text" placeholder="Full Name" value={formData.name} onChange={handleChange} className="input-premium" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2B1D17] mb-2">Email Address</label>
-                <div className="relative">
-                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <input name="email" type="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} className="input-premium pl-14" required />
-                </div>
+                <input name="email" type="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} className="input-premium" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2B1D17] mb-2">Phone Number</label>
-                <div className="relative">
-                  <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <input name="phone" type="tel" placeholder="Enter your phone number" value={formData.phone} onChange={handleChange} className="input-premium pl-14" required />
-                </div>
+                <input name="phone" type="tel" placeholder="Enter your phone number" value={formData.phone} onChange={handleChange} className="input-premium" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2B1D17] mb-2">Password</label>

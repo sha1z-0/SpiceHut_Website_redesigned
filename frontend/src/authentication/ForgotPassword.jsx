@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { FiMail, FiPhone, FiAlertCircle, FiCheckCircle } from "react-icons/fi";
+import { FiAlertCircle, FiCheckCircle } from "react-icons/fi";
 import { authAPI } from "../services/api";
 import PasswordInput from "../User-Frontend/components/PasswordInput";
 import { validatePassword } from "../User-Frontend/utils/passwordUtils";
@@ -70,11 +70,11 @@ export default function ForgotPassword() {
               <form onSubmit={handleVerify} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-[#2B1D17] mb-2">Email</label>
-                  <div className="relative"><FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium pl-14" required /></div>
+                  <input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-premium" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#2B1D17] mb-2">Phone</label>
-                  <div className="relative"><FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /><input type="tel" placeholder="Enter your phone number" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-premium pl-14" required /></div>
+                  <input type="tel" placeholder="Enter your phone number" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-premium" required />
                 </div>
                 <button type="button" onClick={handleSendOtp} disabled={sendingOtp} className="btn-secondary w-full py-3 text-sm">{sendingOtp ? "Sending..." : "Send SMS verification code"}</button>
                 <button type="submit" disabled={isLoading} className="btn-primary w-full py-3.5">{isLoading ? "Verifying..." : "Verify Identity"}</button>
