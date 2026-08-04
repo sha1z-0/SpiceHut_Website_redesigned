@@ -20,7 +20,6 @@ import Settings from './Admin-Frontend/Pages/Settings';
 
 //user-view import
 import GuestLayout from './User-Frontend/GuestLayout.jsx';
-import Intro from './User-Frontend/pages/intro.jsx';
 import Home from './User-Frontend/pages/Home.jsx';
 import Menu from './User-Frontend/pages/Menu.jsx';
 import CategoryPage from './User-Frontend/pages/CategoryPage.jsx';
@@ -77,7 +76,6 @@ function App() {
 
             {/* Public: guest browsing routes — open to everyone */}
             <Route element={<GuestLayout />}>
-              <Route path="/user/intro" element={<Intro />} />
               <Route path="/user/home" element={<Home />} />
               <Route path="/user/menu" element={<Menu />} />
               <Route path="/user/menu/:category" element={<CategoryPage />} />

@@ -11,7 +11,7 @@ const Footer = () => {
             {/* Brand */}
             <div className="lg:col-span-1">
               <h3 className="font-serif text-2xl font-bold text-[#D9A441] mb-4">
-                Spice Hut
+                Spice Hut Indian Cuisine
               </h3>
               <p className="text-white/60 text-sm leading-relaxed mb-6">
                 Authentic East Indian cuisine served across Canada. Fresh ingredients,
@@ -83,7 +83,7 @@ const Footer = () => {
       <div className="md:hidden space-y-0">
         {/* Brand block */}
         <div className="px-5 pt-8 pb-5 border-b border-white/5">
-          <h3 className="font-serif text-xl font-bold text-[#D9A441] mb-2">Spice Hut</h3>
+          <h3 className="font-serif text-xl font-bold text-[#D9A441] mb-2">Spice Hut Indian Cuisine</h3>
           <p className="text-white/50 text-xs leading-relaxed mb-4">
             Authentic East Indian cuisine served across Canada. Fresh ingredients, family recipes, and flavors that tell a story.
           </p>
@@ -149,7 +149,7 @@ const Footer = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-white/40 text-sm">
-              &copy; {new Date().getFullYear()} Spice Hut. All rights reserved.
+              &copy; {new Date().getFullYear()} Spice Hut Indian Cuisine. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link to="/user/policies" className="text-white/40 hover:text-white/70 transition-colors text-xs">Privacy Policy</Link>
@@ -163,7 +163,7 @@ const Footer = () => {
       {/* ============ MOBILE BOTTOM BAR ============ */}
       <div className="md:hidden border-t border-white/5">
         <div className="px-5 py-4 flex flex-col items-center gap-2">
-          <p className="text-white/30 text-xs">&copy; {new Date().getFullYear()} Spice Hut. All rights reserved.</p>
+          <p className="text-white/30 text-xs">&copy; {new Date().getFullYear()} Spice Hut Indian Cuisine. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link to="/user/policies" className="text-white/30 hover:text-white/60 transition-colors text-[11px]">Privacy Policy</Link>
             <Link to="/user/policies" className="text-white/30 hover:text-white/60 transition-colors text-[11px]">Terms</Link>

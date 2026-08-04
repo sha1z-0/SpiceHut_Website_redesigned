@@ -58,11 +58,16 @@ export default function SupportPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF8F1]">
-      <section className="relative bg-[#2B1D17] pt-32 pb-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+      <section className="relative overflow-hidden pt-32 pb-16">
+        <div className="absolute inset-0 z-0">
+          <img src="/media/home.jpg" alt="Spice Hut Background" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1A100D]/95 via-[#1A100D]/90 to-[#1A100D]/85" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1A100D]/80 via-transparent to-transparent" />
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Help Center</span>
           <h1 className="font-serif text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">Support Center</h1>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">We're here to help! Get answers or reach out to our friendly support team.</p>
+          <p className="text-white/80 text-lg max-w-2xl mx-auto">We're here to help! Get answers or reach out to our friendly support team.</p>
         </div>
       </section>
 
@@ -82,15 +87,24 @@ export default function SupportPage() {
                 {isVisitUsExpanded ? <MdExpandLess className="text-[#F47A20] text-xl" /> : <MdExpandMore className="text-[#F47A20] text-xl" />}
               </button>
               <div className={`overflow-hidden transition-all duration-300 ${isVisitUsExpanded ? "max-h-96" : "max-h-0"}`}>
-                <div className="p-6 border-t border-gray-100 space-y-1">
-                  {branchesLoading ? <p className="text-sm text-[#2B1D17]/40">Loading...</p>
-                  : branches.length === 0 ? <p className="text-sm text-[#2B1D17]/40">No locations available.</p>
-                  : branches.map((b) => (
-                    <Link key={b._id} to={`/user/contact?branchId=${encodeURIComponent(b._id)}`}
-                      className="block py-2.5 px-4 text-[#F47A20] hover:bg-[#FFF5EB] rounded-xl transition-colors font-medium text-sm">
-                      {b.city || b.name} → {b.addressLine}
-                    </Link>
-                  ))}
+                <div className="p-6 border-t border-gray-100 space-y-3">
+                  <div className="p-4 bg-[#FFF5EB] rounded-xl text-sm space-y-1">
+                    <p className="font-semibold text-[#2B1D17] text-base">Calgary Location</p>
+                    <p className="text-[#2B1D17]/70 flex items-center gap-2"><MdLocationOn className="text-[#F47A20]" /> 2616-18 Street NE Calgary Alberta T2E 7R1</p>
+                    <p className="text-[#F47A20] font-medium flex items-center gap-2 mt-1"><MdPhone /> 403-371-3331</p>
+                  </div>
+                  {branchesLoading ? <p className="text-sm text-[#2B1D17]/40">Loading locations...</p>
+                  : branches.length > 0 && (
+                    <div className="space-y-1 pt-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[#2B1D17]/50 mb-2">All Branch Locations:</p>
+                      {branches.map((b) => (
+                        <Link key={b._id} to={`/user/contact?branchId=${encodeURIComponent(b._id)}`}
+                          className="block py-2.5 px-4 text-[#F47A20] hover:bg-[#FFF5EB] rounded-xl transition-colors font-medium text-sm">
+                          {b.city || b.name} → {b.fullAddress || b.addressLine} {b.phone ? `(${b.phone})` : ''}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

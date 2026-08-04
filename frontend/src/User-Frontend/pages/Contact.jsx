@@ -27,21 +27,40 @@ export default function Contact() {
     })();
   }, [location.search]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-[#2B1D17]/60">Loading...</div>;
-  if (!contactContent) return <div className="min-h-screen flex items-center justify-center text-[#2B1D17]/60">Contact info not available.</div>;
+  const defaultAddress = "2616-18 Street NE Calgary Alberta T2E 7R1";
+  const defaultPhone = "403-371-3331";
+
+  const activeContent = contactContent || {
+    title: "Contact Us",
+    address: defaultAddress,
+    phone: defaultPhone,
+    email: "info@spicehutcanada.com",
+    hours: {
+      "Monday - Thursday": "11:00 AM - 10:00 PM",
+      "Friday - Saturday": "11:00 AM - 11:00 PM",
+      "Sunday": "12:00 PM - 10:00 PM"
+    }
+  };
 
   const params = new URLSearchParams(location.search);
   const branchIdParam = params.get('branchId');
-  const displayPhone = branchIdParam ? (branchInfo?.phone || contactContent.phone) : contactContent.phone;
-  const displayAddress = branchIdParam ? (branchInfo?.fullAddress || contactContent.address) : contactContent.address;
+  const displayPhone = branchIdParam ? (branchInfo?.phone || defaultPhone) : defaultPhone;
+  const displayAddress = branchIdParam ? (branchInfo?.fullAddress || defaultAddress) : defaultAddress;
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-[#2B1D17]/60">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-[#FFF8F1]">
-      <section className="relative bg-[#2B1D17] pt-32 pb-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+      <section className="relative overflow-hidden pt-32 pb-16">
+        <div className="absolute inset-0 z-0">
+          <img src="/media/home.jpg" alt="Spice Hut Background" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1A100D]/95 via-[#1A100D]/90 to-[#1A100D]/85" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1A100D]/80 via-transparent to-transparent" />
+        </div>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Get In Touch</span>
-          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">{contactContent.title}</h1>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">We're here to serve you the best culinary experience.</p>
+          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">{activeContent.title}</h1>
+          <p className="text-white/80 text-lg max-w-2xl mx-auto">We're here to serve you the best culinary experience.</p>
         </div>
       </section>
 
@@ -65,14 +84,14 @@ export default function Contact() {
               )}
               <div className="flex gap-4">
                 <div className="w-11 h-11 rounded-xl bg-[#F47A20]/10 flex items-center justify-center flex-shrink-0"><FaEnvelope className="text-[#F47A20]" /></div>
-                <div><h3 className="font-semibold text-[#2B1D17] text-sm">Email</h3><p className="text-[#2B1D17]/60 text-sm">{contactContent.email}</p></div>
+                <div><h3 className="font-semibold text-[#2B1D17] text-sm">Email</h3><p className="text-[#2B1D17]/60 text-sm">{activeContent.email}</p></div>
               </div>
               <div className="flex gap-4">
                 <div className="w-11 h-11 rounded-xl bg-[#F47A20]/10 flex items-center justify-center flex-shrink-0"><FaClock className="text-[#F47A20]" /></div>
                 <div>
                   <h3 className="font-semibold text-[#2B1D17] text-sm mb-2">Hours</h3>
                   <div className="space-y-1 text-xs">
-                    {Object.entries(contactContent.hours || {}).map(([day, hours]) => (
+                    {Object.entries(activeContent.hours || {}).map(([day, hours]) => (
                       <div key={day} className="flex justify-between gap-8 text-[#2B1D17]/60"><span className="capitalize">{day}</span><span>{hours}</span></div>
                     ))}
                   </div>

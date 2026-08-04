@@ -11,6 +11,15 @@ const mongoose = require('mongoose');
 
 const branches = [
   {
+    name: 'Calgary',
+    addressLine: '2616-18 Street NE',
+    city: 'Calgary',
+    province: 'Alberta',
+    postalCode: 'T2E 7R1',
+    country: 'Canada',
+    phone: '403-371-3331',
+  },
+  {
     name: 'Campbell River',
     addressLine: '510 – 1400 Dogwood Street',
     city: 'Campbell River',
@@ -115,8 +124,9 @@ function buildFullAddress(b) {
     for (const b of branches) {
       const fullAddress = buildFullAddress(b);
       const slug = `${b.city}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const fullName = `Spice Hut Indian Cuisine - ${b.name}`;
       const upsert = {
-        name: b.name,
+        name: fullName,
         addressLine: b.addressLine,
         city: b.city,
         province: b.province || '',

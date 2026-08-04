@@ -65,13 +65,18 @@ const Menu = () => {
   return (
     <div className="min-h-screen bg-[#FFF8F1] flex flex-col">
       {/* Hero */}
-      <section className="relative bg-[#2B1D17] pt-32 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+      <section className="relative overflow-hidden pt-32 pb-16">
+        <div className="absolute inset-0 z-0">
+          <img src="/media/home.jpg" alt="Spice Background" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1A100D]/95 via-[#1A100D]/90 to-[#1A100D]/85" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1A100D]/80 via-transparent to-transparent" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 text-center">
           <span className="text-[#D9A441] font-semibold text-sm uppercase tracking-widest">Discover</span>
           <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-white mt-3 mb-4">
             Explore Our <span className="text-[#F47A20]">Menu</span>
           </h1>
-          <p className="text-white/60 text-lg max-w-xl mx-auto">
+          <p className="text-white/80 text-lg max-w-xl mx-auto">
             Select a category or search to discover our delicious offerings
           </p>
 
@@ -81,7 +86,7 @@ const Menu = () => {
             <input
               type="text" placeholder="Search dishes, categories..." ref={searchInputRef}
               value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-12 py-4 bg-white rounded-2xl text-[#2B1D17] placeholder:text-gray-400 text-lg focus:outline-none focus:ring-4 focus:ring-[#F47A20]/20 shadow-card transition-all"
+              className="w-full pl-12 pr-12 py-4 bg-white/95 backdrop-blur-md rounded-2xl text-[#2B1D17] placeholder:text-gray-400 text-lg focus:outline-none focus:ring-4 focus:ring-[#F47A20]/20 shadow-2xl transition-all border border-white/20"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl">&times;</button>

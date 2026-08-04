@@ -8,6 +8,14 @@ import { validateDeliveryRange, MAX_DELIVERY_RADIUS_KM } from "../utils/distance
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, selectedBranch, setSelectedBranch } = useCart();
+
+  const formatBranchName = (branch) => {
+    if (!branch) return "";
+    const raw = branch.name || branch.city || "";
+    const clean = raw.replace(/^(Spice\s*Hut\s*(Indian\s*Cuisine\s*)?[-–—]?\s*)/i, "").trim();
+    return `Spice Hut Indian Cuisine - ${clean || branch.city}`;
+  };
+
   const [userInfo, setUserInfo] = useState({ fullName: "", email: "", phone: "" });
   const deliveryMethod = "home";
   const [addresses, setAddresses] = useState([]);
@@ -194,7 +202,13 @@ export default function Checkout() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-[#2B1D17] text-sm">{branch.name || branch.city}</div>
+                        <div className="font-semibold text-[#2B1D17] text-sm">
+                          {(() => {
+                            const raw = branch.name || branch.city || "";
+                            const clean = raw.replace(/^(Spice\s*Hut\s*(Indian\s*Cuisine\s*)?[-–—]?\s*)/i, "").trim();
+                            return `Spice Hut Indian Cuisine - ${clean || branch.city}`;
+                          })()}
+                        </div>
                         <div className="text-[#2B1D17]/50 text-xs mt-0.5 truncate">{branch.fullAddress || branch.addressLine}</div>
                       </div>
                       <span className="text-[#F47A20] text-xs font-medium bg-[#F47A20]/10 px-2.5 py-1 rounded-full whitespace-nowrap">{branch.city}</span>
@@ -295,7 +309,7 @@ export default function Checkout() {
               {selectedBranch && (
                 <div className="flex items-center gap-2 mb-4 p-3 bg-[#FFF5EB] rounded-xl border border-[#F47A20]/20">
                   <FaStore className="text-[#F47A20] text-sm" />
-                  <span className="text-sm font-medium text-[#2B1D17]">Selected Branch: <b className="text-[#F47A20]">{selectedBranch.name || selectedBranch.city}</b></span>
+                  <span className="text-sm font-medium text-[#2B1D17]">Selected Branch: <b className="text-[#F47A20]">{formatBranchName(selectedBranch)}</b></span>
                 </div>
               )}
               <div className="space-y-2 mb-4">

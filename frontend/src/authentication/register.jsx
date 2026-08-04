@@ -91,7 +91,7 @@ export default function Register() {
         <div className="relative z-10 flex flex-col justify-center px-16">
           <div className="mb-8">
             <h1 className="font-serif text-6xl font-bold text-white leading-tight">
-              Join <span className="text-[#F47A20]">Spice Hut</span>
+              Join <span className="text-[#F47A20]">Spice Hut Indian Cuisine</span>
             </h1>
             <div className="section-divider mt-4" />
           </div>

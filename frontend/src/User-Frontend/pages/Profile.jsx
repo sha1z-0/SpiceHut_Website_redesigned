@@ -259,7 +259,7 @@ const Profile = () => {
                   <div className="inline-flex items-center gap-2 bg-[#D9A441]/20 rounded-full px-4 py-1 mb-3">
                     <FaStar className="text-[#D9A441] text-xs" /><span className={`text-xs font-semibold ${tierColor}`}>{tierLabel} Tier</span>
                   </div>
-                  <h2 className="font-serif text-2xl font-bold mb-2">Spice Hut Rewards</h2>
+                  <h2 className="font-serif text-2xl font-bold mb-2">Spice Hut Indian Cuisine Rewards</h2>
                   <p className="text-white/60 text-sm max-w-md">
                     {loyaltyPoints >= 100
                       ? `You can redeem your points for $${Math.floor(loyaltyPoints / 100)}.00 off your next order!`
