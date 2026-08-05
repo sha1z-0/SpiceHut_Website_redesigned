@@ -30,6 +30,11 @@ export default function Contact() {
   const defaultAddress = "2616-18 Street NE Calgary Alberta T2E 7R1";
   const defaultPhone = "403-371-3331";
 
+  const params = new URLSearchParams(location.search);
+  const branchIdParam = params.get('branchId');
+  const displayPhone = branchIdParam ? (branchInfo?.phone || defaultPhone) : defaultPhone;
+  const displayAddress = branchIdParam ? (branchInfo?.fullAddress || defaultAddress) : defaultAddress;
+
   const activeContent = {
     title: contactContent?.title || "Contact Us",
     address: displayAddress,
@@ -39,11 +44,6 @@ export default function Contact() {
       "Monday - Sunday": "11:00 AM - 10:00 PM"
     }
   };
-
-  const params = new URLSearchParams(location.search);
-  const branchIdParam = params.get('branchId');
-  const displayPhone = branchIdParam ? (branchInfo?.phone || defaultPhone) : defaultPhone;
-  const displayAddress = branchIdParam ? (branchInfo?.fullAddress || defaultAddress) : defaultAddress;
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-[#2B1D17]/60">Loading...</div>;
 
