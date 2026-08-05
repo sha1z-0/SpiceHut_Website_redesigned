@@ -15,7 +15,7 @@ const faqCategories = [
   {
     icon: MdLocalShipping, title: "Delivery & Pickup",
     questions: [
-      { question: "What are your delivery hours?", answer: "We deliver Monday through Sunday from 11AM to 11PM." },
+      { question: "What are your delivery hours?", answer: "We deliver Monday through Sunday from 11:00 AM to 10:00 PM." },
       { question: "How much is delivery?", answer: "Delivery is always free!" },
       { question: "How long does delivery take?", answer: "Most deliveries arrive within 25-35 minutes. During peak hours, it may take up to 45 minutes." },
     ],

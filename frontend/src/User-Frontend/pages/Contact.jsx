@@ -30,15 +30,13 @@ export default function Contact() {
   const defaultAddress = "2616-18 Street NE Calgary Alberta T2E 7R1";
   const defaultPhone = "403-371-3331";
 
-  const activeContent = contactContent || {
-    title: "Contact Us",
-    address: defaultAddress,
-    phone: defaultPhone,
-    email: "info@spicehutcanada.com",
+  const activeContent = {
+    title: contactContent?.title || "Contact Us",
+    address: displayAddress,
+    phone: displayPhone,
+    email: contactContent?.email || "info@spicehutcanada.com",
     hours: {
-      "Monday - Thursday": "11:00 AM - 10:00 PM",
-      "Friday - Saturday": "11:00 AM - 11:00 PM",
-      "Sunday": "12:00 PM - 10:00 PM"
+      "Monday - Sunday": "11:00 AM - 10:00 PM"
     }
   };
 

@@ -23,9 +23,9 @@ export default function Settings() {
       tuesday: "11:00 AM - 10:00 PM",
       wednesday: "11:00 AM - 10:00 PM",
       thursday: "11:00 AM - 10:00 PM",
-      friday: "11:00 AM - 11:00 PM",
-      saturday: "12:00 PM - 11:00 PM",
-      sunday: "12:00 PM - 9:00 PM"
+      friday: "11:00 AM - 10:00 PM",
+      saturday: "11:00 AM - 10:00 PM",
+      sunday: "11:00 AM - 10:00 PM"
     },
     socialMedia: {
       facebook: "https://facebook.com/restaurant",
