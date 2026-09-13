@@ -51,7 +51,7 @@ export default function Contact() {
     <div className="min-h-screen bg-[#FFF8F1]">
       <section className="relative overflow-hidden pt-32 pb-16">
         <div className="absolute inset-0 z-0">
-          <img src="/media/home.jpg" alt="Spice Hut Background" className="w-full h-full object-cover" />
+          <img src="/media/home.webp" alt="Spice Hut Background" className="w-full h-full object-cover" fetchpriority="high" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1A100D]/95 via-[#1A100D]/90 to-[#1A100D]/85" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A100D]/80 via-transparent to-transparent" />
         </div>

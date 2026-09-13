@@ -59,7 +59,7 @@ const Menu = () => {
 
   const displayCategories = searchResults ? (searchResults.categories || []) : categories;
   const displayItems = searchResults ? (searchResults.items || []).filter(i => i.status === "Available") : [];
-  const getItemImage = (item) => resolveImageSrc(item?.image, '/home.jpg');
+  const getItemImage = (item) => resolveImageSrc(item?.image, '/media/home.webp');
   const filteredCategories = activeCategory === "all" ? categories : categories.filter(c => (c.slug || c.name) === activeCategory);
 
   return (
@@ -67,7 +67,7 @@ const Menu = () => {
       {/* Hero */}
       <section className="relative overflow-hidden pt-32 pb-16">
         <div className="absolute inset-0 z-0">
-          <img src="/media/home.jpg" alt="Spice Background" className="w-full h-full object-cover" />
+          <img src="/media/home.webp" alt="Spice Background" className="w-full h-full object-cover" fetchpriority="high" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1A100D]/95 via-[#1A100D]/90 to-[#1A100D]/85" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A100D]/80 via-transparent to-transparent" />
         </div>
@@ -146,7 +146,7 @@ const Menu = () => {
                       <div key={cat._id || cat.name} onClick={() => navigate(`/user/menu/${encodeURIComponent(cat.slug || cat.name)}`)}
                         className="card-premium overflow-hidden cursor-pointer group">
                         <div className="h-40 overflow-hidden">
-                          <img src={cat.image || "/home.jpg"} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"} alt={cat.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         </div>
                         <div className="p-4">
                           <h3 className="font-serif font-bold text-[#2B1D17]">{cat.name}</h3>
@@ -184,7 +184,7 @@ const Menu = () => {
                 <div key={cat._id || cat.name} onClick={() => navigate(`/user/menu/${encodeURIComponent(cat.slug || cat.name)}`)}
                   className="card-premium overflow-hidden cursor-pointer group">
                   <div className="relative h-52 overflow-hidden">
-                    <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <img src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"} alt={cat.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="font-serif text-xl font-bold text-white">{cat.name}</h3>
@@ -235,7 +235,7 @@ function DishCard({ item, itemQuantities, handleQuantityChange, startFlow, getIt
   return (
     <div className="card-premium overflow-hidden group">
       <div className="relative h-52 overflow-hidden">
-        <img src={getItemImage(item)} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+        <img src={getItemImage(item)} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
         <div className="absolute top-3 left-3 flex gap-1.5">
           {item.subCategory && item.subCategory.split(",").map((tag) => tag.trim()).filter((t) => tagColors[t]).map((t) => (
             <span key={t} className={`text-[10px] text-white px-2 py-0.5 rounded-full font-semibold ${tagColors[t]}`}>{t}</span>

@@ -7,7 +7,12 @@ export function resolveImageSrc(img, fallback = '/default-category.jpg') {
   if (!trimmed) return fallback;
   
   // Cloudinary URLs (https://res.cloudinary.com/...)
-  if (trimmed.startsWith('https://res.cloudinary.com')) return trimmed;
+  if (trimmed.startsWith('https://res.cloudinary.com')) {
+    if (!trimmed.includes('f_auto') && trimmed.includes('/upload/')) {
+      return trimmed.replace('/upload/', '/upload/f_auto,q_auto,w_800,c_limit/');
+    }
+    return trimmed;
+  }
   
   // Data URLs
   if (trimmed.startsWith('data:')) return trimmed;

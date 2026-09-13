@@ -155,8 +155,12 @@ export default function Billing() {
                 Payment Method
               </h3>
               <div className="bg-[#FFF5EB] rounded-2xl p-5 border border-[#F47A20]/20">
-                <p className="font-serif text-lg font-bold text-[#2B1D17]">Cash on Delivery</p>
-                <p className="text-[#2B1D17]/50 text-sm mt-2">Pay with cash when your order is delivered or picked up.</p>
+                <p className="font-serif text-lg font-bold text-[#2B1D17]">Cash on {passedDeliveryMethod === "pickup" ? "Pickup" : "Delivery"}</p>
+                <p className="text-[#2B1D17]/50 text-sm mt-2">
+                  {passedDeliveryMethod === "pickup"
+                    ? "Pay with cash or card at the store counter when picking up your order."
+                    : "Pay with cash when your order is delivered to your door."}
+                </p>
               </div>
             </div>
           </div>
@@ -164,6 +168,12 @@ export default function Billing() {
           <div className="space-y-6">
             <div className="card-premium p-6 sticky top-24">
               <h3 className="font-serif text-lg font-bold text-[#2B1D17] mb-4">Order Summary</h3>
+              <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-xl text-xs font-medium">
+                <span className="text-gray-500">Method:</span>
+                <span className="text-[#F47A20] font-bold">
+                  {passedDeliveryMethod === "pickup" ? "🛍️ Store Pickup" : "🚚 Home Delivery"}
+                </span>
+              </div>
               <div className="space-y-2 mb-4">
                 {displayItems.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-sm"><span className="text-[#2B1D17]/60">{item.name} x{item.quantity}</span><span className="font-medium">${(item.price*item.quantity).toFixed(2)}</span></div>
@@ -171,7 +181,12 @@ export default function Billing() {
               </div>
               <div className="border-t border-gray-100 pt-4 space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-[#2B1D17]/60">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                {(passedDeliveryMethod==="home"||passedDeliveryMethod==="homeDelivery") && <div className="flex justify-between text-sm"><span className="text-[#2B1D17]/60">Delivery Fee</span><span className="text-green-600">Free</span></div>}
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#2B1D17]/60">Delivery Fee</span>
+                  <span className="text-green-600 font-medium">
+                    {passedDeliveryMethod === "pickup" ? "N/A (Pickup)" : "Free"}
+                  </span>
+                </div>
                 {applyLoyaltyDiscount && <div className="flex justify-between text-sm text-green-600"><span>Loyalty Discount</span><span>-${loyaltyDiscount.toFixed(2)}</span></div>}
                 {instantDiscount > 0 && <div className="flex justify-between text-sm text-green-600"><span>Instant Redemption</span><span>-${instantDiscount.toFixed(2)}</span></div>}
                 <div className="flex justify-between font-serif text-xl font-bold text-[#2B1D17] pt-3 border-t border-gray-200"><span>Total</span><span>${total.toFixed(2)}</span></div>

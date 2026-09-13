@@ -21,18 +21,23 @@ export default function Orders() {
       // Fetch orders with pagination
       const data = await orderAPI.getOrders({ page: pageNum, limit: ITEMS_PER_PAGE });
       const ordersList = data.orders || data || [];
-      const mapped = (ordersList || []).map((o) => ({
-        id: o._id,
-        orderId: o.orderId,
-        customer: o.userId?.name || o.customerEmail || (o.userId?.email || '').split('@')[0],
-        items: (o.items || []).map(i => i.name || i),
-        total: o.totalAmount ?? o.total ?? 0,
-        status: o.status,
-        date: new Date(o.createdAt).toLocaleDateString(),
-        time: new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        payment: o.paymentMethod || '—',
-        raw: o,
-      }));
+      const mapped = (ordersList || []).map((o) => {
+        const isPickup = o.orderType === 'pickup' || o.deliveryFee === null;
+        return {
+          id: o._id,
+          orderId: o.orderId,
+          customer: o.userId?.name || o.customerEmail || (o.userId?.email || '').split('@')[0],
+          items: (o.items || []).map(i => i.name || i),
+          total: o.totalAmount ?? o.total ?? 0,
+          status: o.status,
+          date: new Date(o.createdAt).toLocaleDateString(),
+          time: new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          payment: o.paymentMethod || '—',
+          isPickup,
+          typeLabel: isPickup ? '🛍️ Pickup' : '🚚 Delivery',
+          raw: o,
+        };
+      });
       setOrders(mapped);
       // Set total pages from pagination info if available
       if (data.pagination) {
@@ -178,7 +183,12 @@ export default function Orders() {
                 {incomingOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.orderId || order.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>{order.customer}</div>
+                      <span className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${order.isPickup ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                        {order.typeLabel}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       <div className="max-w-xs truncate" title={order.items.join(", ")}>
                         {order.items.join(", ")}
@@ -249,7 +259,12 @@ export default function Orders() {
                 {acceptedOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.orderId || order.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>{order.customer}</div>
+                      <span className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${order.isPickup ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                        {order.typeLabel}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       <div className="max-w-xs truncate" title={order.items.join(", ")}>
                         {order.items.join(", ")}
@@ -314,7 +329,12 @@ export default function Orders() {
                 {completedOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.orderId || order.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>{order.customer}</div>
+                      <span className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${order.isPickup ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                        {order.typeLabel}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       <div className="max-w-xs truncate" title={order.items.join(", ")}>
                         {order.items.join(", ")}

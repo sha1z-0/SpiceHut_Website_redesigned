@@ -77,7 +77,7 @@ export default function AboutUs() {
       {/* ============ HERO SECTION ============ */}
       <section className="relative overflow-hidden pt-32 pb-24">
         <div className="absolute inset-0 z-0">
-          <img src="/media/home.jpg" alt="Spice Hut Background" className="w-full h-full object-cover" />
+          <img src="/media/home.webp" alt="Spice Hut Background" className="w-full h-full object-cover" fetchpriority="high" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#1A100D]/95 via-[#1A100D]/90 to-[#1A100D]/85" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A100D]/80 via-transparent to-transparent" />
         </div>
@@ -141,7 +141,7 @@ export default function AboutUs() {
       {/* ============ MILESTONE JOURNEY ============ */}
       <section className="relative overflow-hidden py-24">
         <div className="absolute inset-0 z-0">
-          <img src="/media/home.jpg" alt="Spice Hut Journey" className="w-full h-full object-cover" />
+          <img src="/media/home.webp" alt="Spice Hut Journey" loading="lazy" decoding="async" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#1A100D]/95 via-[#1A100D]/90 to-[#1A100D]/95" />
         </div>
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 text-center">

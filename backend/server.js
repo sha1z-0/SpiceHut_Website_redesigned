@@ -74,10 +74,25 @@ app.get("/ping", (req, res) => {
 
 const _dirname = path.resolve()
 
-// Serve static files from uploads directory
-app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve static files from uploads directory with browser caching
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '7d',
+  immutable: true,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+  },
+}));
 
-app.use(express.static(path.join(_dirname, "/frontend/dist")));
+app.use(express.static(path.join(_dirname, "/frontend/dist"), {
+  maxAge: '1d',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
+}));
 
 // Serve React app for any non-API GET request so client-side routing works on refresh.
 // Use a RegExp route to avoid path-to-regexp parsing issues with certain string patterns.

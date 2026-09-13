@@ -86,7 +86,7 @@ export default function Register() {
     <div className="min-h-screen flex">
       {/* Left — Cinematic */}
       <div className="hidden lg:flex w-1/2 relative bg-[#2B1D17] overflow-hidden">
-        <img src="/media/home.jpg" alt="Spice Hut" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/media/home.webp" alt="Spice Hut" className="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
         <div className="absolute inset-0 bg-gradient-to-br from-[#2B1D17]/90 via-[#2B1D17]/70 to-[#F47A20]/40" />
         <div className="relative z-10 flex flex-col justify-center px-16">
           <div className="mb-8">

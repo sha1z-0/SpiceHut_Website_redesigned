@@ -9,6 +9,8 @@ const getCartKey = (userId) => (userId ? `cart_${userId}` : "cart_guest");
 const getPointsKey = (userId) => (userId ? `loyalty_${userId}` : "loyalty_guest");
 const BRANCH_KEY = "selectedBranch";
 
+const FULFILLMENT_KEY = "fulfillmentType";
+
 export function CartProvider({ children }) {
   const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
@@ -16,8 +18,16 @@ export function CartProvider({ children }) {
   const [selectedBranch, setSelectedBranch] = useState(() => {
     try { const s = sessionStorage.getItem(BRANCH_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
   });
+  const [fulfillmentType, setFulfillmentType] = useState(() => {
+    try { const f = sessionStorage.getItem(FULFILLMENT_KEY); return f || "delivery"; } catch { return "delivery"; }
+  });
   const [toast, setToast] = useState({ visible: false, message: "" });
   const [prevUserId, setPrevUserId] = useState(null);
+
+  // Persist fulfillmentType to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(FULFILLMENT_KEY, fulfillmentType);
+  }, [fulfillmentType]);
 
   // Load cart on mount and when user changes
   useEffect(() => {
@@ -125,6 +135,7 @@ export function CartProvider({ children }) {
       loyaltyPoints, addLoyaltyPoints, useLoyaltyDiscount, setLoyaltyPoints,
       toast, showToast, applyInstantRedemption,
       selectedBranch, setSelectedBranch,
+      fulfillmentType, setFulfillmentType,
     }}>
       {children}
     </CartContext.Provider>

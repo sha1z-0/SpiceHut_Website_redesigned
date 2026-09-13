@@ -17,10 +17,10 @@ const testimonials = [
 ];
 
 const popularDishes = [
-  { name: "Butter Chicken", image: "/media/butter-chicken.jpg", price: 17.95, spice: "Mild", cat: "Butter Dishes" },
-  { name: "Chicken Biryani", image: "/Biryani.jpg", price: 18.95, spice: "Medium", cat: "Biryani Dishes" },
-  { name: "Tandoori Chicken Tikka", image: "/Tandoori%20Chicken%20Tikka%20.jpg", price: 16.95, spice: "Medium Hot", cat: "Tandoori Dishes" },
-  { name: "Lamb Korma", image: "/korma.jpg", price: 19.95, spice: "Mild", cat: "Korma Dishes" },
+  { name: "Butter Chicken", image: "/media/butter-chicken.webp", price: 17.95, spice: "Mild", cat: "Butter Dishes" },
+  { name: "Chicken Biryani", image: "/Biryani.webp", price: 18.95, spice: "Medium", cat: "Biryani Dishes" },
+  { name: "Tandoori Chicken Tikka", image: "/Tandoori-Chicken-Tikka.webp", price: 16.95, spice: "Medium Hot", cat: "Tandoori Dishes" },
+  { name: "Lamb Korma", image: "/korma.webp", price: 19.95, spice: "Mild", cat: "Korma Dishes" },
 ];
 
 const spiceColors = { Mild: "bg-green-500", "Mild Medium": "bg-yellow-500", Medium: "bg-orange-500", "Medium Hot": "bg-red-400", Hot: "bg-red-600", "Extra Hot": "bg-red-800" };
@@ -62,9 +62,10 @@ const Home = () => {
         <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden">
           <div className="absolute inset-0 z-0">
             <img
-              src="/media/home.jpg"
+              src="/media/home.webp"
               alt="Spice Hut"
               className="w-full h-full object-cover"
+              fetchpriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#1A100D]/95 via-[#1A100D]/80 to-[#1A100D]/30" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1A100D]/60 via-transparent to-transparent" />
@@ -114,12 +115,12 @@ const Home = () => {
               </div>
               <div className="hidden lg:flex justify-center items-center relative">
                 <div className="relative w-[420px] h-[420px]">
-                  <img src="/media/butter-chicken.jpg" alt="Butter Chicken"
+                  <img src="/media/butter-chicken.webp" alt="Butter Chicken"
                     className="absolute top-0 right-0 w-64 h-64 object-cover rounded-3xl shadow-2xl border-4 border-white/20 animate-float z-20" />
-                  <img src="/Biryani.jpg" alt="Biryani"
+                  <img src="/Biryani.webp" alt="Biryani"
                     className="absolute bottom-0 left-0 w-56 h-56 object-cover rounded-3xl shadow-2xl border-4 border-white/20 animate-float z-10"
                     style={{ animationDelay: "1.5s" }} />
-                  <img src="/Tandoori%20Chicken%20Tikka%20.jpg" alt="Tikka"
+                  <img src="/Tandoori-Chicken-Tikka.webp" alt="Tikka"
                     className="absolute top-32 left-20 w-48 h-48 object-cover rounded-3xl shadow-2xl border-4 border-white/20 animate-float z-0"
                     style={{ animationDelay: "2.5s" }} />
                   <div className="absolute bottom-10 right-10 glass rounded-2xl px-4 py-3 z-30">
@@ -142,7 +143,7 @@ const Home = () => {
       {/* ============ MOBILE HERO ============ */}
       <section className="md:hidden relative pt-28 pb-8 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img src="/media/home.jpg" alt="Spice Hut" className="w-full h-full object-cover" />
+          <img src="/media/home.webp" alt="Spice Hut" className="w-full h-full object-cover" fetchpriority="high" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#1A100D]/90 via-[#1A100D]/75 to-[#1A100D]/60" />
         </div>
         <div className="relative z-10 px-5">
@@ -230,7 +231,7 @@ const Home = () => {
                 <div key={i} className="card-premium overflow-hidden group cursor-pointer"
                   onClick={() => navigate(`/user/menu/${encodeURIComponent(dish.cat)}`)}>
                   <div className="relative overflow-hidden h-56">
-                    <img src={dish.image} alt={dish.name}
+                    <img src={dish.image} alt={dish.name} loading="lazy" decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 text-xs font-semibold text-[#2B1D17] shadow-lg">
                       ${dish.price.toFixed(2)}
@@ -271,7 +272,7 @@ const Home = () => {
                 className="w-[150px] flex-shrink-0 card-premium overflow-hidden cursor-pointer"
                 onClick={() => navigate(`/user/menu/${encodeURIComponent(dish.cat)}`)}>
                 <div className="relative h-36 overflow-hidden">
-                  <img src={dish.image} alt={dish.name} className="w-full h-full object-cover" />
+                  <img src={dish.image} alt={dish.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   <div className="absolute top-2 right-2 bg-white rounded-full px-2 py-0.5 text-[10px] font-semibold text-[#2B1D17] shadow">
                     ${dish.price.toFixed(2)}
                   </div>
@@ -314,25 +315,21 @@ const Home = () => {
                     <div className="card-premium !bg-white/5 !border !border-white/10 overflow-hidden hover:!border-[#F47A20]/30">
                       <div className="relative overflow-hidden h-52">
                         <img
-                          src={cat.image ? resolveImageSrc(cat.image, "/home.jpg") : "/home.jpg"}
+                          src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"}
                           alt={cat.name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#2B1D17] via-transparent to-transparent" />
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <h3 className="font-serif text-xl font-bold text-white">{cat.name}</h3>
-                          {cat.subCategory && (
-                            <span className="text-xs text-white/60 mt-1 inline-block">{cat.subCategory}</span>
-                          )}
-                        </div>
                       </div>
-                      <div className="p-5">
+                      <div className="p-6">
+                        <h3 className="font-serif text-xl font-bold text-white mb-2">{cat.name}</h3>
                         {cat.description && (
-                          <p className="text-white/50 text-sm leading-relaxed">{cat.description}</p>
+                          <p className="text-white/60 text-sm line-clamp-2 mb-4">{cat.description}</p>
                         )}
-                        <button className="btn-secondary !border-[#F47A20] !text-white hover:!bg-[#F47A20] hover:!text-white w-full mt-4 text-sm">
-                          Explore Menu
-                        </button>
+                        <span className="text-[#F47A20] text-sm font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                          Explore Menu <FaChevronRight size={12} />
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -343,18 +340,18 @@ const Home = () => {
         </section>
       </div>
 
-      {/* ============ MOBILE CATEGORIES ============ */}
+      {/* ============ MOBILE CATEGORIES GRID ============ */}
       <section className="md:hidden bg-[#2B1D17] py-10">
         <div className="px-5">
-          <div className="mb-6">
+          <div className="mb-5">
             <span className="text-[#D9A441] font-semibold text-xs uppercase tracking-widest">Explore</span>
             <h2 className="font-serif text-2xl font-bold text-white mt-1.5 mb-2">Our Menu Categories</h2>
             <div className="section-divider" />
           </div>
           {loading ? (
-            <div className="text-center text-white/50 py-10 text-sm">Loading categories...</div>
+            <div className="text-center text-white/60 py-8 text-sm">Loading categories...</div>
           ) : categories.length === 0 ? (
-            <div className="text-center text-white/50 py-10 text-sm">No categories available.</div>
+            <div className="text-center text-white/60 py-8 text-sm">No categories available.</div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {categories.map((cat, i) => (
@@ -363,8 +360,10 @@ const Home = () => {
                   <div className="card-premium !bg-white/8 !border !border-white/10 overflow-hidden hover:!border-[#F47A20]/30">
                     <div className="relative h-24 overflow-hidden">
                       <img
-                        src={cat.image ? resolveImageSrc(cat.image, "/home.jpg") : "/home.jpg"}
+                        src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"}
                         alt={cat.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#2B1D17]/80 via-transparent to-transparent" />
@@ -449,7 +448,7 @@ const Home = () => {
                     {t.name[0]}
                   </div>
                   <div>
-                    <p className="font-semibold text-[#2B1D17] text-sm">{t.name}</p>
+                    <p className="font-[#2B1D17] font-semibold text-sm">{t.name}</p>
                     <p className="text-[#2B1D17]/50 text-xs">{t.location}</p>
                   </div>
                 </div>
@@ -477,7 +476,7 @@ const Home = () => {
       {/* ============ CTA SECTION (responsive, no duplication) ============ */}
       <section className="relative py-16 md:py-28 overflow-hidden">
         <div className="absolute inset-0">
-          <img src="/media/home.jpg" alt="" className="w-full h-full object-cover brightness-[0.25]" />
+          <img src="/media/home.webp" alt="" loading="lazy" decoding="async" className="w-full h-full object-cover brightness-[0.25]" />
         </div>
         <div className="relative z-10 max-w-3xl mx-auto text-center px-4">
           <h2 className="font-serif text-2xl md:text-4xl sm:text-5xl font-bold text-white mb-6">

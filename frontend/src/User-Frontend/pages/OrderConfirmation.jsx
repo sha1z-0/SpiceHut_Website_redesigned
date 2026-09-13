@@ -27,14 +27,14 @@ export default function OrderConfirmation() {
           const computedSub = items.reduce((a, i) => a + (i.price||0)*(i.quantity||1), 0);
           const sub = typeof order.subtotal === "number" ? order.subtotal : computedSub;
           const tax = typeof order.tax === "number" ? order.tax : 0;
-          const df = typeof order.deliveryFee === "number" ? order.deliveryFee : null;
-          const tot = typeof order.totalAmount === "number" ? order.totalAmount : +(sub+tax+(df||0)).toFixed(2);
+          const isPickup = order.orderType === 'pickup' || df === null;
           setOrderData({
             orderId: order.orderId || order._id, orderDate: date.toLocaleDateString(), orderTime: date.toLocaleTimeString(),
             userName: order.userId?.name || "Valued Customer", paymentMethod: order.paymentMethod || "COD",
-            deliveryAddress: order.deliveryLocation?.address || "", deliveryMethod: df === null ? "Pickup" : "Home Delivery",
-            estimatedTime: order.estimatedDeliveryTime ? `${new Date(order.estimatedDeliveryTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}` : "40 minutes",
-            items, subtotal: sub, tax, deliveryFee: df, total: tot,
+            deliveryAddress: isPickup ? (order.deliveryLocation?.address ? `Pickup at ${order.deliveryLocation.address}` : "Store Pickup") : (order.deliveryLocation?.address || ""),
+            deliveryMethod: isPickup ? "🛍️ Store Pickup" : "🚚 Home Delivery",
+            estimatedTime: order.estimatedDeliveryTime ? `${new Date(order.estimatedDeliveryTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}` : (isPickup ? "15–25 minutes (Prep Time)" : "40 minutes"),
+            items, subtotal: sub, tax, deliveryFee: df, total: tot, isPickup,
           });
           emptyCart();
           try { const profile = await profileAPI.getProfile(); if (profile) setLoyaltyPoints(profile.loyaltyPoints||0); } catch {}

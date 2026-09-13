@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import Login from './authentication/login';
@@ -5,18 +6,18 @@ import Register from './authentication/register';
 import VerifyEmail from './authentication/VerifyEmail';
 import ForgotPassword from './authentication/ForgotPassword';
 
-//admin-view import
-import AdminRegister from './authentication/adminregister';
-import AdminLayout from './Admin-Frontend/Components/AdminLayout';
-import MenuManagement from './Admin-Frontend/Pages/MenuManagement';
-import Orders from './Admin-Frontend/Pages/Orders';
-import Customers from './Admin-Frontend/Pages/Customers';
-import Admins from './Admin-Frontend/Pages/Admins';
-import Branches from './Admin-Frontend/Pages/Branches';
-import AdminProfile from './Admin-Frontend/Pages/Profile';
-import Dashboard from './Admin-Frontend/Pages/Dashboard';
-import Reports from './Admin-Frontend/Pages/Reports';
-import Settings from './Admin-Frontend/Pages/Settings';
+// admin-view import (lazy loaded to minimize bandwidth for normal users)
+const AdminRegister = lazy(() => import('./authentication/adminregister'));
+const AdminLayout = lazy(() => import('./Admin-Frontend/Components/AdminLayout'));
+const MenuManagement = lazy(() => import('./Admin-Frontend/Pages/MenuManagement'));
+const Orders = lazy(() => import('./Admin-Frontend/Pages/Orders'));
+const Customers = lazy(() => import('./Admin-Frontend/Pages/Customers'));
+const Admins = lazy(() => import('./Admin-Frontend/Pages/Admins'));
+const Branches = lazy(() => import('./Admin-Frontend/Pages/Branches'));
+const AdminProfile = lazy(() => import('./Admin-Frontend/Pages/Profile'));
+const Dashboard = lazy(() => import('./Admin-Frontend/Pages/Dashboard'));
+const Reports = lazy(() => import('./Admin-Frontend/Pages/Reports'));
+const Settings = lazy(() => import('./Admin-Frontend/Pages/Settings'));
 
 //user-view import
 import GuestLayout from './User-Frontend/GuestLayout.jsx';
@@ -46,33 +47,34 @@ function App() {
         <ToastWrapper />
         <Router>
           <ScrollToTop />
-          <Routes>
-            {/* Public: landing redirect */}
-            <Route path="/" element={<Navigate to="/user/home" replace />} />
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FFF8F1] text-[#2B1D17]">Loading...</div>}>
+            <Routes>
+              {/* Public: landing redirect */}
+              <Route path="/" element={<Navigate to="/user/home" replace />} />
 
-            {/* Public: auth pages */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/adminregister" element={<AdminRegister />} />
+              {/* Public: auth pages */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/adminregister" element={<AdminRegister />} />
 
-            {/* Admin Routes - Protected (admin only) */}
-            <Route path="/admin" element={
-              <ProtectedRoute requireAdmin={true}>
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="menumanagement" element={<MenuManagement />} />
-              <Route path="orders" element={<Orders />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="admins" element={<Admins />} />
-              <Route path="branches" element={<Branches />} />
-              <Route path="profile" element={<AdminProfile />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+              {/* Admin Routes - Protected (admin only) */}
+              <Route path="/admin" element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="menumanagement" element={<MenuManagement />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="admins" element={<Admins />} />
+                <Route path="branches" element={<Branches />} />
+                <Route path="profile" element={<AdminProfile />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
             {/* Public: guest browsing routes — open to everyone */}
             <Route element={<GuestLayout />}>
@@ -102,6 +104,7 @@ function App() {
 
             <Route path="*" element={<Navigate to="/user/home" replace />} />
           </Routes>
+          </Suspense>
         </Router>
       </CartProvider>
     </AuthProvider>
