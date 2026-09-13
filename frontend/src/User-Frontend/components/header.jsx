@@ -12,7 +12,7 @@ const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef(null);
-  const cartCount = cartItems.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
+  const cartCount = (cartItems || []).reduce((total, item) => total + (Number(item?.quantity) || 0), 0);
   const cartCountLabel = cartCount > 99 ? "99+" : cartCount.toString();
   const authed = isAuthenticated();
 

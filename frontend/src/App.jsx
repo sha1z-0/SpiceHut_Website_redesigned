@@ -1,10 +1,44 @@
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
 import Login from './authentication/login';
 import Register from './authentication/register';
 import VerifyEmail from './authentication/VerifyEmail';
 import ForgotPassword from './authentication/ForgotPassword';
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Uncaught application error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#FFF8F1] flex items-center justify-center p-6 text-center">
+          <div className="max-w-md bg-white p-8 rounded-2xl shadow-xl border border-[#2B1D17]/10">
+            <h2 className="font-serif text-2xl font-bold text-[#2B1D17] mb-3">Something went wrong</h2>
+            <p className="text-[#2B1D17]/60 text-sm mb-6">
+              We encountered an unexpected error. Please refresh the page to continue.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-[#F47A20] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#d96613] transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // admin-view import (lazy loaded to minimize bandwidth for normal users)
 const AdminRegister = lazy(() => import('./authentication/adminregister'));
@@ -42,10 +76,11 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <ToastWrapper />
-        <Router>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CartProvider>
+          <ToastWrapper />
+          <Router>
           <ScrollToTop />
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FFF8F1] text-[#2B1D17]">Loading...</div>}>
             <Routes>
@@ -108,6 +143,7 @@ function App() {
         </Router>
       </CartProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 export default App;

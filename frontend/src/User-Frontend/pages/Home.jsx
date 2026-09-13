@@ -25,6 +25,23 @@ const popularDishes = [
 
 const spiceColors = { Mild: "bg-green-500", "Mild Medium": "bg-yellow-500", Medium: "bg-orange-500", "Medium Hot": "bg-red-400", Hot: "bg-red-600", "Extra Hot": "bg-red-800" };
 
+const getShortCategoryDesc = (cat) => {
+  if (cat?.description && cat.description.trim()) {
+    const words = cat.description.trim().split(/\s+/);
+    if (words.length <= 4) return words.join(" ");
+    return words.slice(0, 4).join(" ");
+  }
+  const nameLower = (cat?.name || "").toLowerCase();
+  if (nameLower.includes("appetizer") || nameLower.includes("starter")) return "Crispy fresh savory starters";
+  if (nameLower.includes("biryani") || nameLower.includes("rice")) return "Flavorful aromatic rice dishes";
+  if (nameLower.includes("curry") || nameLower.includes("main")) return "Rich aromatic Indian curries";
+  if (nameLower.includes("tandoori") || nameLower.includes("grill")) return "Smoky clay oven specialties";
+  if (nameLower.includes("bread") || nameLower.includes("naan")) return "Freshly baked Indian breads";
+  if (nameLower.includes("dessert") || nameLower.includes("sweet")) return "Sweet traditional Indian treats";
+  if (nameLower.includes("drink") || nameLower.includes("beverage")) return "Refreshing authentic Indian drinks";
+  return "Authentic handcrafted Indian dishes";
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
