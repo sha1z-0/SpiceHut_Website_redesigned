@@ -37,17 +37,16 @@ export const profileAPI = {
 };
 import axios from 'axios';
 
-// Create axios instance with base configuration
 const envBaseUrl = import.meta?.env?.VITE_API_BASE_URL;
-const isLocal =
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1';
-const defaultBaseUrl = isLocal
-  ? 'http://localhost:5000/api'
-  : `https://${window.location.hostname}/api`;
+const getApiBaseUrl = () => {
+  if (envBaseUrl) return envBaseUrl;
+  if (typeof window === 'undefined') return '/api';
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isLocal ? 'http://localhost:5000/api' : `${window.location.origin}/api`;
+};
 
 const api = axios.create({
-  baseURL: envBaseUrl || defaultBaseUrl,
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

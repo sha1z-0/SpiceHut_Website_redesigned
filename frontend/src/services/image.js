@@ -27,9 +27,13 @@ export function resolveImageSrc(img, fallback = '/media/home.webp') {
   // Full HTTP/HTTPS URLs
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
 
-  // Determine backend origin for local uploads
-  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const serverOrigin = isLocal ? 'http://localhost:5000' : `${window.location.protocol}//${window.location.hostname}`;
+  // Determine backend origin for local uploads safely
+  const getOrigin = () => {
+    if (typeof window === 'undefined') return '';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    return isLocal ? 'http://localhost:5000' : window.location.origin;
+  };
+  const serverOrigin = getOrigin();
 
   if (trimmed.startsWith('/api/uploads/')) {
     return `${serverOrigin}${trimmed}`;
