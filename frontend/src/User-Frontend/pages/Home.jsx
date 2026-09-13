@@ -309,24 +309,28 @@ const Home = () => {
             ) : categories.length === 0 ? (
               <div className="text-center text-white/60 py-12">No categories available.</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 {categories.map((cat, i) => (
-                  <div key={i} className="group cursor-pointer" onClick={() => navigate(`/user/menu/${encodeURIComponent(cat.slug || cat.name)}`)}>
-                    <div className="card-premium !bg-white/5 !border !border-white/10 overflow-hidden hover:!border-[#F47A20]/30">
-                      <div className="relative overflow-hidden h-52">
-                        <img
-                          src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"}
-                          alt={cat.name}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
+                  <div key={i} className="group cursor-pointer flex flex-col h-full" onClick={() => navigate(`/user/menu/${encodeURIComponent(cat.slug || cat.name)}`)}>
+                    <div className="card-premium !bg-white/5 !border !border-white/10 overflow-hidden hover:!border-[#F47A20]/30 h-full flex flex-col justify-between">
+                      <div>
+                        <div className="relative overflow-hidden h-52 shrink-0">
+                          <img
+                            src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"}
+                            alt={cat.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        </div>
+                        <div className="p-6">
+                          <h3 className="font-serif text-xl font-bold text-white mb-2 line-clamp-1">{cat.name}</h3>
+                          <p className="text-white/60 text-sm line-clamp-1 h-5 mb-4">
+                            {getShortCategoryDesc(cat)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="p-6">
-                        <h3 className="font-serif text-xl font-bold text-white mb-2">{cat.name}</h3>
-                        {cat.description && (
-                          <p className="text-white/60 text-sm line-clamp-2 mb-4">{cat.description}</p>
-                        )}
+                      <div className="px-6 pb-6 pt-0">
                         <span className="text-[#F47A20] text-sm font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                           Explore Menu <FaChevronRight size={12} />
                         </span>
@@ -353,26 +357,30 @@ const Home = () => {
           ) : categories.length === 0 ? (
             <div className="text-center text-white/60 py-8 text-sm">No categories available.</div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 items-stretch">
               {categories.map((cat, i) => (
-                <div key={i} className="cursor-pointer"
+                <div key={i} className="cursor-pointer flex flex-col h-full"
                   onClick={() => navigate(`/user/menu/${encodeURIComponent(cat.slug || cat.name)}`)}>
-                  <div className="card-premium !bg-white/8 !border !border-white/10 overflow-hidden hover:!border-[#F47A20]/30">
-                    <div className="relative h-24 overflow-hidden">
-                      <img
-                        src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"}
-                        alt={cat.name}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#2B1D17]/80 via-transparent to-transparent" />
-                      <div className="absolute bottom-2 left-2 right-2">
-                        <h3 className="font-serif text-xs font-bold text-white leading-tight">{cat.name}</h3>
+                  <div className="card-premium !bg-white/8 !border !border-white/10 overflow-hidden hover:!border-[#F47A20]/30 h-full flex flex-col justify-between">
+                    <div>
+                      <div className="relative h-28 overflow-hidden shrink-0">
+                        <img
+                          src={cat.image ? resolveImageSrc(cat.image, "/media/home.webp") : "/media/home.webp"}
+                          alt={cat.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="p-3">
+                        <h3 className="font-serif text-xs font-bold text-white line-clamp-1 mb-1">{cat.name}</h3>
+                        <p className="text-white/60 text-[10px] line-clamp-1 h-3.5 mb-2">
+                          {getShortCategoryDesc(cat)}
+                        </p>
                       </div>
                     </div>
-                    <div className="px-3 py-2">
-                      <span className="text-[#D9A441] text-[10px] font-medium">Explore →</span>
+                    <div className="px-3 pb-3 pt-0">
+                      <span className="text-[#D9A441] text-[10px] font-medium flex items-center gap-1">Explore →</span>
                     </div>
                   </div>
                 </div>

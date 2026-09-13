@@ -4,6 +4,7 @@ import { useCart } from "../context.cart.jsx";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSpiceAndSidesFlow } from "../components/SpiceAndSidesFlow";
 import { menuAPI } from "../../services/api";
+import { resolveImageSrc } from "../../services/image";
 import { useState, useEffect } from "react";
 import { FaStar, FaArrowLeft } from "react-icons/fa";
 
@@ -37,16 +38,7 @@ const CategoryPage = () => {
     setItemQuantities((prev) => ({ ...prev, [itemId]: Math.max(1, (prev[itemId] || 1) + delta) }));
   };
 
-  const resolveImage = (img, dishName) => {
-    if (img && typeof img === 'string') {
-      if (/^https?:\/\//i.test(img)) return img;
-      if (img.startsWith('/uploads')) return `localhost:5000/api${img}`;
-      if (img.startsWith('uploads/')) return `localhost:5000/api/${img}`;
-      if (/^[^\s/]+\.[a-z]{2,4}$/i.test(img)) return `localhost:5000/api/uploads/${img}`;
-      if (img.startsWith('/')) return img;
-    }
-    return "/home.jpg";
-  };
+  const resolveImage = (img) => resolveImageSrc(img, '/media/home.webp');
 
   return (
     <div className="min-h-screen bg-[#FFF8F1] flex flex-col">

@@ -349,7 +349,7 @@ export default function MenuManagement() {
                     onClick={() => setSelectedCategory(category.name)}
                   >
                     <img
-                      src={resolveImageSrc(category.image, "/default-category.jpg")}
+                      src={resolveImageSrc(category.image, "/media/home.webp")}
                       alt={category.name}
                       className="w-full h-full object-cover"
                     />
@@ -447,7 +447,7 @@ export default function MenuManagement() {
               >
                 <div className="aspect-square bg-gray-200 relative">
                   <img
-                    src={resolveImageSrc(item.image, "/home.jpg")}
+                    src={resolveImageSrc(item.image, "/media/home.webp")}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
