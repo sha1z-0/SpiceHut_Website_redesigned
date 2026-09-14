@@ -43,9 +43,11 @@ export function resolveImageSrc(img, fallback = '/media/home.webp') {
         return envApiUrl.replace(/\/api\/?$/, '');
       }
     }
-    if (typeof window === 'undefined') return '';
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    return isLocal ? 'http://localhost:5000' : window.location.origin;
+    const isBrowser = typeof window !== 'undefined';
+    const isLocal = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    return isBrowser 
+      ? (isLocal ? 'http://localhost:5000' : `${window.location.protocol}//${window.location.host}`)
+      : (process.env.VITE_API_BASE_URL || '');
   };
   const serverOrigin = getBackendOrigin();
 
@@ -70,4 +72,21 @@ export function resolveImageSrc(img, fallback = '/media/home.webp') {
   }
 
   return safeFallback;
+}
+
+// Smart helper to get dish image with fallback based on dish name/category
+export function getDishImage(dish) {
+  if (dish?.image && typeof dish.image === 'string' && dish.image.trim()) {
+    const resolved = resolveImageSrc(dish.image, null);
+    if (resolved && resolved !== '/media/home.webp' && !resolved.endsWith('null')) {
+      return resolved;
+    }
+  }
+  const nameLower = (dish?.name || '').toLowerCase();
+  const catLower = (dish?.category || '').toLowerCase();
+  if (nameLower.includes('butter') || catLower.includes('butter')) return '/butter-chicken.webp';
+  if (nameLower.includes('biryani') || catLower.includes('biryani') || nameLower.includes('rice')) return '/Biryani.webp';
+  if (nameLower.includes('tandoori') || catLower.includes('tandoori') || nameLower.includes('tikka')) return '/Tandoori-Chicken-Tikka.webp';
+  if (nameLower.includes('korma') || catLower.includes('korma') || nameLower.includes('lamb') || nameLower.includes('curry')) return '/korma.webp';
+  return '/butter-chicken.webp';
 }
