@@ -34,7 +34,16 @@ export function resolveImageSrc(img, fallback = '/media/home.webp') {
 
   // Determine backend origin for local uploads safely
   const getBackendOrigin = () => {
-    const envApiUrl = import.meta?.env?.VITE_API_BASE_URL;
+    let envApiUrl = '';
+    // Use try-catch and typeof checks to prevent any build/runtime crashes
+    try {
+      if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
+        envApiUrl = import.meta.env.VITE_API_BASE_URL;
+      }
+    } catch (e) {
+      // Ignore
+    }
+
     if (envApiUrl) {
       try {
         const u = new URL(envApiUrl, typeof window !== 'undefined' ? window.location.href : 'http://localhost:5000');
@@ -43,6 +52,8 @@ export function resolveImageSrc(img, fallback = '/media/home.webp') {
         return envApiUrl.replace(/\/api\/?$/, '');
       }
     }
+    
+    // Fallback if VITE_API_BASE_URL is not provided
     const isBrowser = typeof window !== 'undefined';
     const isLocal = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     return isBrowser 
