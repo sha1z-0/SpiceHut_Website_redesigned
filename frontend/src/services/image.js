@@ -7,10 +7,15 @@ export function resolveImageSrc(img, fallback = '/media/home.webp') {
   if (!img) return safeFallback;
   if (typeof img !== 'string') return safeFallback;
 
-  const trimmed = img.trim();
+  let trimmed = img.trim();
   if (!trimmed) return safeFallback;
   if (trimmed === '/default-category.jpg' || trimmed === '/home.jpg' || trimmed === 'default-category.jpg' || trimmed === 'home.jpg') {
     return safeFallback;
+  }
+
+  // Strip hardcoded development localhost URLs stored in database
+  if (trimmed.includes('localhost:5000') || trimmed.includes('127.0.0.1:5000')) {
+    trimmed = trimmed.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5000/, '');
   }
 
   // Cloudinary URLs (https://res.cloudinary.com/...)
@@ -24,16 +29,25 @@ export function resolveImageSrc(img, fallback = '/media/home.webp') {
   // Data URLs
   if (trimmed.startsWith('data:')) return trimmed;
 
-  // Full HTTP/HTTPS URLs
+  // Other full HTTP/HTTPS URLs (external images)
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
 
   // Determine backend origin for local uploads safely
-  const getOrigin = () => {
+  const getBackendOrigin = () => {
+    const envApiUrl = import.meta?.env?.VITE_API_BASE_URL;
+    if (envApiUrl) {
+      try {
+        const u = new URL(envApiUrl, typeof window !== 'undefined' ? window.location.href : 'http://localhost:5000');
+        return u.origin;
+      } catch {
+        return envApiUrl.replace(/\/api\/?$/, '');
+      }
+    }
     if (typeof window === 'undefined') return '';
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     return isLocal ? 'http://localhost:5000' : window.location.origin;
   };
-  const serverOrigin = getOrigin();
+  const serverOrigin = getBackendOrigin();
 
   if (trimmed.startsWith('/api/uploads/')) {
     return `${serverOrigin}${trimmed}`;
